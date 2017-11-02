@@ -32,7 +32,7 @@ void connect_http() {
 
 
 int main() {
-  printf("Ethernet socket example\n");
+  printf("Ethernet socket test\n");
   net.connect();
   Thread t1;
   t1.start(callback(connect_http));
