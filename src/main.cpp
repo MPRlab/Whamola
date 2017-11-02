@@ -7,7 +7,9 @@ EthernetInterface net;
 void connect_http() {
   // Show the network address
   const char *ip = net.get_ip_address();
+  const char *mac = net.get_mac_address();
   printf("IP address is: %s\n", ip ? ip : "No IP");
+  printf("MAC address is: %s\n", mac ? mac : "No MAC");
 
   // Open a socket on the network interface, and create a TCP connection to mbed.org
   TCPSocket socket;
