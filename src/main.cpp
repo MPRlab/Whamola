@@ -1,8 +1,12 @@
 #include "mbed.h"
 #include "EthernetInterface.h"
+#include "DualMC33926MotorShield.h"
 
 // Network interface
 EthernetInterface net;
+
+// Striker motors
+DualMC33926MotorShield Dampener(PA_7, PB_8);
 
 void connect_http() {
   // Show the network address
