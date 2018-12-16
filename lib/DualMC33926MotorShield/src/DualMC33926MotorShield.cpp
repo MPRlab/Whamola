@@ -36,6 +36,27 @@ DualMC33926MotorShield::DualMC33926MotorShield(PinName M1DIR, PinName M1PWM, Pin
   enable();
 }
 
+DualMC33926MotorShield::DualMC33926MotorShield(PinName M1DIR, PinName M1PWM, PinName M1FB, PinName nD2, PinName nSF){
+  _M1DIR = M1DIR;
+  _M1PWM = M1PWM;
+  _M1FB = M1FB;
+  _nD2 = nD2;
+  _nSF = _nSF;
+
+    // initialize the mbed objects from pins and save their pointers
+  _M1DirOut = new DigitalOut(_M1DIR);
+  _M2DirOut = new DigitalOut(_M2DIR);
+  _M1PwmOut = new PwmOut(_M1PWM);
+  _M1FbAnalogIn = new AnalogIn(_M1FB);
+  _nD2Out = new DigitalOut(_nD2);
+  _nSfDigitalIn = new DigitalIn(_nSF);
+  
+  // default to enable
+  enable();
+
+}
+
+
 // Destructor ////////////////////////////////////////////////////////////////
 DualMC33926MotorShield::~DualMC33926MotorShield(){
     delete _M1DirOut;

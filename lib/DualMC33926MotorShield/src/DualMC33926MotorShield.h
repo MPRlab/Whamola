@@ -12,11 +12,21 @@
 class DualMC33926MotorShield
 {
   public:
-    // CONSTRUCTOR - with default overrides for plugging shield directly into nucleo
-    DualMC33926MotorShield(PinName M1DIR = PF_13, PinName M1PWM = PD_15,
-                           PinName M1FB = A0, PinName M2DIR = PF_12, 
-                           PinName M2PWM = PD_14, PinName M2FB = A1,
-                           PinName nD2 = PF_14, PinName nSF = PA_6);
+    // CONSTRUCTOR - for a 1 motor setup 
+    DualMC33926MotorShield(PinName M1DIR, PinName M1PWM, PinName M1FB, PinName nD2, PinName nSF);
+
+    // CONSTRUCTOR - for 2 motors and all the typical pins plugged in
+    DualMC33926MotorShield(PinName M1DIR, PinName M1PWM,
+                           PinName M1FB, PinName M2DIR, 
+                           PinName M2PWM, PinName M2FB,
+                           PinName nD2, PinName nSF);
+
+    // // CONSTRUCTOR - with default overrides for plugging shield directly into nucleo
+    // DualMC33926MotorShield(PinName M1DIR = PF_13, PinName M1PWM = PD_15,
+    //                        PinName M1FB = A0, PinName M2DIR = PF_12, 
+    //                        PinName M2PWM = PD_14, PinName M2FB = A1,
+    //                        PinName nD2 = PF_14, PinName nSF = PA_6);
+
     // DESTRUCTOR
     ~DualMC33926MotorShield();
     
