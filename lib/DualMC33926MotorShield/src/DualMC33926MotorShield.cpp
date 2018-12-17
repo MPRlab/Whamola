@@ -78,13 +78,13 @@ void DualMC33926MotorShield::disable() {
     _nD2Out->write(0);
 }
 
-// Set speed for motor 1, speed is a number betwenn -400 and 400
+// Set speed for motor 1, speed is a number betwenn -1.0 and 1.0
 void DualMC33926MotorShield::setM1Speed(float speed)
 {
   setMSpeed(_M1PwmOut, _M1DirOut, speed);
 }
 
-// Set speed for motor 2, speed is a number betwenn -400 and 400
+// Set speed for motor 2, speed is a number betwenn -1.0 and 1.0
 void DualMC33926MotorShield::setM2Speed(float speed)
 {
   setMSpeed(_M2PwmOut, _M2DirOut, speed);

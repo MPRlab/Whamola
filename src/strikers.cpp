@@ -21,7 +21,7 @@ int main(){
 	Dampener.enable();
 	wait(2);
 	pc.puts("Sending a speed command\n");
-	Dampener.setM1Speed(300.0); // Set speed between -400.0 and 400.0
+	Dampener.setM1Speed(0.5); // Set speed between -400.0 and 400.0
 	//M1Pwm->write(0.5f);
 	wait(2);
 	pc.puts("going into an infinite while loop\n");
