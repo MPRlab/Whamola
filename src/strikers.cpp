@@ -1,7 +1,14 @@
+/*
+	Messy Test Code for actuating the strikers
+	Author: Sean O'Neil
+*/
 #include "mbed.h"
 #include "DualMC33926MotorShield.h"
+#include "SingleMC33926MotorController.h"
 #include <QEI.h>
 #include <PID.h>
+#include <dsp.h>
+
 
 #define STRIKER_ENCODER_RESOLUTION 3200
 
@@ -9,6 +16,7 @@
 void zeroDampenerOnString(void);
 void moveOneRotation(void);
 void goToPosition(int setpoint, float interval);
+void cmsisControlLoop();
 
 // User button for shutoff
 DigitalIn stopButton(USER_BUTTON);
@@ -18,43 +26,70 @@ Serial pc(USBTX, USBRX);
 
 // Timing
 Timer t;
-float loopTime = 0.01;
+Ticker ticker;
+float loopTime = 0.05;
 
 // Init dampener motor, encoders, and PID
 DualMC33926MotorShield Dampener(D11, D15, A0, D3, D5);
 QEI DampEnc(PD_1, PD_0, NC, STRIKER_ENCODER_RESOLUTION);
+arm_pid_instance_f32 DampPID_cmsis;
+int setpoint = -50;
 PID DampPID(1.0f, 0.0f, 0.0f, loopTime); // Kp, Ki, Kd, interval
+
 
 
 // DualMC33926MotorShield RightStriker(D8,D14);
 // DualMC33926MotorShield LeftStriker(D7,D13);
 
 
-//PwmOut M1Pwm(D15);
-//PwmOut * M1Pwm = new PwmOut(D15);
-
-
 int main(void){
 	
-	// Set PID Parameters
+	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
+	DampPID_cmsis.Kp = 0.009;
+	DampPID_cmsis.Ki = 0.0;
+	DampPID_cmsis.Kd = 0.008;
+	arm_pid_init_f32(&DampPID_cmsis, 1); // Passes in DampPID_cmsis struct and set reset flag to true
+
+	/*
 	DampPID.setInputLimits(-3200.0, 0.0); // Use encoder ticks as input
 	DampPID.setOutputLimits(-1.0, 1.0); // Use half power of motor as output limits for now
-
+	*/
 	while(!stopButton); // stay until I tell you to
 
 	zeroDampenerOnString();
 	wait(1);
-	pc.puts("Moving to a resting position above the string\n\n");
-	goToPosition(-300, loopTime);
+	ticker.attach(&cmsisControlLoop, loopTime);
+
+	// pc.puts("Moving to a resting position above the string\n\n");
+	// goToPosition(-300, loopTime);
 	return 0;
 }
 
+float clampToMotorVal(float output){
+	if(output > 1.0)
+		output = 1.0;
+	else if(output < -1.0)
+		output = -1.0;
+	return output;
+}
+
+void cmsisControlLoop(){
+	int pos = DampEnc.getPulses();
+	float out = arm_pid_f32(&DampPID_cmsis, setpoint - pos);
+	out = - clampToMotorVal(out); // Negative here cuz the motor expects it the other way
+	printf("PID output: %f\tPosition: %d\n", out, pos);
+	Dampener.setM1Speed(out);
+
+}
+
+//Function based on old PID.h library
 void goToPosition(int setpoint, float interval){ // setpoint in ticks, set to -200 for a decent resting place above string
 	int posError = setpoint - DampEnc.getPulses();
 	int position;
 	float pidSpeed;
 	while(!stopButton){// && abs(setpoint - position) > 10){ // stop when within a certain tolerance area
 		t.reset();
+		posError = setpoint - DampEnc.getPulses();
 		position =  DampEnc.getPulses();
 		DampPID.setProcessValue(position);
 		pidSpeed = DampPID.compute();
@@ -76,14 +111,18 @@ void zeroDampenerOnString(){
 	int currentCount = 0;
 	pc.puts("Enabling\n");
 	Dampener.enable();
+
+	// Start driving the motor towards the string
 	Dampener.setM1Speed(-0.1f); // Set speed between -1.0 to 1.0
 	t.start();
 
-	while(t.read() < 0.25){
+	// Take in some measurements as a baseline
+	while(t.read() < 0.2){
 		amps = Dampener.getM1CurrentAmps();
 		currentSum += amps;
 		currentCount++;
 	}
+
 
 	avgCurrent = currentSum / currentCount;
 	float currentThreshold = avgCurrent + 0.05;
@@ -91,6 +130,7 @@ void zeroDampenerOnString(){
 	currentSum = 0.0;
 	currentCount = 0;
 
+	// Drive until the string is sensed, i.e. current exceeds threshold
 	t.reset();
 	while(!stopButton && avgCurrent < currentThreshold){
 		amps = Dampener.getM1CurrentAmps();
