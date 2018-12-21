@@ -1,5 +1,5 @@
 /*
-	Messy Test Code for actuating the strikers
+	Messy Test Code for actuating the strikers without the RotaryActuator Library
 	Author: Sean O'Neil
 */
 #include "mbed.h"
@@ -29,25 +29,38 @@ Timer t;
 Ticker ticker;
 float loopTime = 0.05;
 
-// Init dampener motor, encoders, and PID
+// Init dampener actuator
 DualMC33926MotorShield Dampener(D11, D15, A0, D3, D5);
 QEI DampEnc(PD_1, PD_0, NC, STRIKER_ENCODER_RESOLUTION);
 arm_pid_instance_f32 DampPID_cmsis;
-int setpoint = -50;
+int setpoint = -100;
 PID DampPID(1.0f, 0.0f, 0.0f, loopTime); // Kp, Ki, Kd, interval
 
+// Init Striker left actuator
+SingleMC33926MotorController StrikerL(D7, D13, A1, PE_14, PB_11);
 
+// Init Striker right actuator
+SingleMC33926MotorController StrikerR(D8, D14, A2, PB_10, PE_15);
 
 // DualMC33926MotorShield RightStriker(D8,D14);
 // DualMC33926MotorShield LeftStriker(D7,D13);
 
 
+// Testing
+DigitalOut testDir(PG_0);
+
 int main(void){
+
+	// Test
+	testDir.write(1);
+	wait(5);
+	testDir.write(0);
+	
 	
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
-	DampPID_cmsis.Kp = 0.009;
+	DampPID_cmsis.Kp = 0.005;
 	DampPID_cmsis.Ki = 0.0;
-	DampPID_cmsis.Kd = 0.008;
+	DampPID_cmsis.Kd = 0.0;
 	arm_pid_init_f32(&DampPID_cmsis, 1); // Passes in DampPID_cmsis struct and set reset flag to true
 
 	/*
@@ -55,13 +68,43 @@ int main(void){
 	DampPID.setOutputLimits(-1.0, 1.0); // Use half power of motor as output limits for now
 	*/
 	while(!stopButton); // stay until I tell you to
+/*
+	// Debugging stuff 
+	StrikerL.enable();
+	StrikerR.enable();
+
+	StrikerL.setSpeedBrake(0.7f);
+	StrikerR.setSpeedBrake(0.7f);
+	wait(10);
+	StrikerL.setSpeedBrake(-0.3f);
+	StrikerR.setSpeedBrake(-0.3f);
+	wait(10);
+	StrikerL.setSpeedBrake(0.0f);
+	StrikerR.setSpeedBrake(0.0f);
+*/
 
 	zeroDampenerOnString();
 	wait(1);
 	ticker.attach(&cmsisControlLoop, loopTime);
 
+
+	StrikerL.setSpeedCoast(1.0f);
+	StrikerR.setSpeedCoast(1.0f);
+	wait(0.2);
+	StrikerL.setSpeedCoast(0.0f);
+	StrikerR.setSpeedCoast(0.0f);
+	
+
 	// pc.puts("Moving to a resting position above the string\n\n");
 	// goToPosition(-300, loopTime);
+	while(!stopButton){
+		printf("Right Motor Current: %f\tLeft Motor Current: %f\n", StrikerR.getCurrent(), StrikerL.getCurrent());
+	}
+	StrikerL.setSpeedBrake(0.0f);
+	StrikerR.setSpeedBrake(0.0f);
+	ticker.detach();
+	Dampener.setM1Speed(0.0f);
+
 	return 0;
 }
 
@@ -77,7 +120,7 @@ void cmsisControlLoop(){
 	int pos = DampEnc.getPulses();
 	float out = arm_pid_f32(&DampPID_cmsis, setpoint - pos);
 	out = - clampToMotorVal(out); // Negative here cuz the motor expects it the other way
-	printf("PID output: %f\tPosition: %d\n", out, pos);
+	//printf("PID output: %f\tPosition: %d\n", out, pos);
 	Dampener.setM1Speed(out);
 
 }
@@ -125,7 +168,7 @@ void zeroDampenerOnString(){
 
 
 	avgCurrent = currentSum / currentCount;
-	float currentThreshold = avgCurrent + 0.05;
+	float currentThreshold = avgCurrent + 0.06;
 	printf("current to detect zero point on the string: %f A\n", currentThreshold);
 	currentSum = 0.0;
 	currentCount = 0;
