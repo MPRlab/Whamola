@@ -196,7 +196,7 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance){
 	// Bring the striker back to home position after some time 
 	_controlLoopCounter = 0;
 	float waitTime = 0.25; // in seconds
-	while (_controlLoopCounter < 0.05 * waitTime);
+	while(_controlLoopCounter < _controlInterval * waitTime);
 	goHome();
 	_state = STATE_POSITION_CONTROL;
 }
