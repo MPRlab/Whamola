@@ -17,6 +17,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	_ArmPosPid = new arm_pid_instance_f32;
 	_ArmVelPid = new arm_pid_instance_f32;
 
+	_controlInterval = controlInterval;
 	_tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
@@ -41,6 +42,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	_ArmPosPid = new arm_pid_instance_f32;
 	_ArmVelPid = new arm_pid_instance_f32;
 
+	_controlInterval = controlInterval;
 	_tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
@@ -124,7 +126,7 @@ void RotaryActuator::setPosSetpoint(int encoderSetpoint){
 }
 
 void RotaryActuator::setVelSetpoint(float encoderVelSetpoint){ // in encoder ticks / second
-	_velSetpoint = encoderVelSetpoint;
+	_velSetpoint = encoderVelSetpoint * _controlInterval; // ticks/sec -> ticks/loop
 }
 
 void RotaryActuator::setHomePos(int encoderTicks){
@@ -133,6 +135,10 @@ void RotaryActuator::setHomePos(int encoderTicks){
 
 void RotaryActuator::goToString(){
 	setPosSetpoint(0);
+}
+
+void RotaryActuator::goHome(){
+	setPosSetpoint(_homePos);
 }
 
 float RotaryActuator::clampToMotorVal(float output){
@@ -147,14 +153,16 @@ float RotaryActuator::clampToMotorVal(float output){
 // This method is called periodically on the ticker object
 void RotaryActuator::controlLoop(){
 	
-	float pos = _Encoder->getPulses();
+	_pos = _Encoder->getPulses();
 
-
-	if(_state == STATE_POSITION_CONTROL){
+	if(_state == STATE_IDLE_COAST){
+		_Motor.setSpeedCoast(0.0f);
+	}
+	else if(_state == STATE_POSITION_CONTROL){
 		float out = arm_pid_f32(this->_ArmPosPid, _posSetpoint - pos);
 		out = - clampToMotorVal(out); // Negative here cuz the motor expects it the other way
 		printf("PID output: %f\tPosition: %f\tSetpoint: %d\n", out, pos, _posSetpoint);
-		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive
+		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
 	else if(_state == STATE_VELOCITY_CONTROL){
@@ -164,11 +172,31 @@ void RotaryActuator::controlLoop(){
 		_Motor->setSpeedCoast(out); // This uses coast for the bounceback effect on the string for gestures
 
 	}
-
-	else{ // _state == STATE_CURRENT_CONTROL
+	else if(_state == STATE_CURRENT_CONTROL){
 		float current = _Motor->getCurrent(); // TODO: add current control mode
 	}
+	else{ // _state == STATE_STARTUP
+		float current = _Motor->getCurrent(); // TODO: change this to some default thing or something that does nothing
+	} 
 
 	_lastPos = pos;
 	_controlLoopCounter++;
+}
+
+// TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
+void RotaryActuator::coastStrike(float encVel, int releaseDistance){
+
+	setVelSetpoint(encVel); // encoder ticks / second
+	_state = STATE_VELOCITY_CONTROL;
+
+	while(abs(_pos) > releaseDistance); // keep at that velocity until it gets close enough to the string
+	_state = STATE_IDLE_COAST; // Let the striker coast to bounce off the string
+	setVelSetpoint(0.0f); // encoder ticks / second
+
+	// Bring the striker back to home position after some time 
+	_controlLoopCounter = 0;
+	float waitTime = 0.25; // in seconds
+	while (_controlLoopCounter < 0.05 * waitTime);
+	goHome();
+	_state = STATE_POSITION_CONTROL;
 }

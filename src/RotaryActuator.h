@@ -31,7 +31,7 @@ public:
 
 	// Position Control state methods
 	void setPosSetpoint(int encoderSetpoint); 
-	void setVelSetpoint(float encoderVelSetpoint); // in encoder ticks / second
+	void setVelSetpoint(float encoderVelSetpoint); // in encoder ticks / control loop
 	void goHome(); // goes to home position
 	void goToString(); // goes to the calibrated zero position, temporary dampener
 	void setHomePos(int encoderTicks);
@@ -40,9 +40,10 @@ public:
 	// Velocity control methods:
 
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
-	// TODO: have it take in a rotational velocity in rev/sec and calculate appropriate Duty Cycle OR control for it
-	void coastStrike(float pwmSpeed, int releaseDistance); 
-	void dampenString(bool hard); // dampen string hard or soft by controlling for current 
+	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
+	void coastStrike(float encVel, int releaseDistance); // release distance in ticks for now
+
+	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
 
 
 private:
@@ -56,20 +57,24 @@ private:
 	Ticker _tick;
 	bool _isCalibrated = false;
 	int _posSetpoint;
+	int _pos; // *** Might need to change this to a float
 	float _velSetpoint;
 	int _homePos = -50;
 
+	float _controlInterval;
 	uint32_t _controlLoopCounter = 0;
 	int _lastPos = 0;
 
 	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
 	enum State{
-		STATE_IDLE,
+		STATE_IDLE_COAST, 
 		STATE_POSITION_CONTROL, // TODO: add current and velocity PID (maybe this is just a position PID) 
-		STATE_VELOCITY_CONTROL
+		STATE_VELOCITY_CONTROL,
+		STATE_CURRENT_CONTROL,
+		STATE_STARTUP
 	};
 
-	State _state = STATE_IDLE;
+	State _state = STATE_STARTUP;
 
 
 	// CMSIS DSP ARM PID classes 
