@@ -74,8 +74,10 @@ void RotaryActuator::calibrate(int homePosDist){
 	_Motor->enable();
 	Timer t;
 
-	// Start driving the motor towards the string
-	_Motor->setSpeedCoast(-0.1f); // Set speed between -1.0 to 1.0
+	// Start driving the motor away from the string
+	_Motor->setSpeedBrake(-0.15f); // Set speed between -1.0 to 1.0
+	wait(0.5);
+	_Motor->setSpeedBrake(0.15f); // Set speed between -1.0 to 1.0
 	t.start();
 
 	// Take in some measurements as a baseline
@@ -114,10 +116,11 @@ void RotaryActuator::calibrate(int homePosDist){
 	_Encoder->reset();
 	_Motor->setSpeedBrake(0.0f);
 
+
 	// sets home position to be slightly above where the string is
 	setHomePos(_Encoder->getPulses() - homePosDist);
 	setPosSetpoint(_homePos);
-
+	
 	_state = STATE_POSITION_CONTROL;
 }
 
@@ -141,6 +144,11 @@ void RotaryActuator::goHome(){
 	setPosSetpoint(_homePos);
 }
 
+int RotaryActuator::readEncoder(){
+	return _Encoder->getPulses();
+}
+
+
 float RotaryActuator::clampToMotorVal(float output){
 	if(output > 1.0)
 		output = 1.0;
@@ -156,47 +164,59 @@ void RotaryActuator::controlLoop(){
 	_pos = _Encoder->getPulses();
 
 	if(_state == STATE_IDLE_COAST){
-		_Motor.setSpeedCoast(0.0f);
+		_Motor->setSpeedCoast(0.0f);
+		printf("Encoder ticks: %d\n", _Encoder->getPulses());
 	}
 	else if(_state == STATE_POSITION_CONTROL){
-		float out = arm_pid_f32(this->_ArmPosPid, _posSetpoint - pos);
-		out = - clampToMotorVal(out); // Negative here cuz the motor expects it the other way
-		printf("PID output: %f\tPosition: %f\tSetpoint: %d\n", out, pos, _posSetpoint);
+		float out = arm_pid_f32(this->_ArmPosPid, (float) _posSetpoint - _pos);
+		if(!_Motor->isFlipped())
+			out = - clampToMotorVal(out); 
+		else
+			out = clampToMotorVal(out); 
+		// printf("PID output: %f\tPosition: %d\tSetpoint: %d\n", out, _Encoder->getPulses(), _posSetpoint);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
 	else if(_state == STATE_VELOCITY_CONTROL){
-		float vel = pos - _lastPos;
+		float vel = _pos - _lastPos;
 		float out = arm_pid_f32(this->_ArmVelPid, _velSetpoint - vel);
-		out = - clampToMotorVal(out);
+		out = clampToMotorVal(out);
 		_Motor->setSpeedCoast(out); // This uses coast for the bounceback effect on the string for gestures
 
 	}
 	else if(_state == STATE_CURRENT_CONTROL){
 		float current = _Motor->getCurrent(); // TODO: add current control mode
 	}
-	else{ // _state == STATE_STARTUP
-		float current = _Motor->getCurrent(); // TODO: change this to some default thing or something that does nothing
+	else{ // _state == STATE_IDLE
+		//printf("Encoder ticks: %d\n", _Encoder->getPulses()); // TODO: change this to some default thing or something that does nothing
 	} 
 
-	_lastPos = pos;
+	_lastPos = _pos;
 	_controlLoopCounter++;
 }
 
 // TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
 void RotaryActuator::coastStrike(float encVel, int releaseDistance){
 
-	setVelSetpoint(encVel); // encoder ticks / second
-	_state = STATE_VELOCITY_CONTROL;
+	// TODO: create a velocity controller and actually use it
+	// setVelSetpoint(encVel); // encoder ticks / second
+	// _state = STATE_VELOCITY_CONTROL;
+	_state = STATE_IDLE;
 
-	while(abs(_pos) > releaseDistance); // keep at that velocity until it gets close enough to the string
+	_Motor->setSpeedCoast(encVel);
+	while(abs(_pos) > releaseDistance){ // keep at that velocity until it gets close enough to the string
+		printf("pos: %d\n", _Encoder->getPulses());
+	}
 	_state = STATE_IDLE_COAST; // Let the striker coast to bounce off the string
-	setVelSetpoint(0.0f); // encoder ticks / second
+	//setVelSetpoint(0.0f); // encoder ticks / second
 
-	// Bring the striker back to home position after some time 
+	// Bring the striker back to home position after the wait time below 
+	/* 
 	_controlLoopCounter = 0;
-	float waitTime = 0.25; // in seconds
-	while(_controlLoopCounter < _controlInterval * waitTime);
+	float waitTime = 0.5; // in seconds
+	while(_controlLoopCounter < _controlInterval * waitTime); 
+	*/
+	wait(0.5);
 	goHome();
 	_state = STATE_POSITION_CONTROL;
 }

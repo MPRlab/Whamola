@@ -14,6 +14,13 @@
 #include <QEI.h>
 #include <dsp.h>
 
+enum State{
+	STATE_IDLE_COAST, 
+	STATE_POSITION_CONTROL, // TODO: add current and velocity PID (maybe this is just a position PID) 
+	STATE_VELOCITY_CONTROL,
+	STATE_CURRENT_CONTROL,
+	STATE_IDLE
+};
 
 class RotaryActuator
 {
@@ -35,8 +42,15 @@ public:
 	void goHome(); // goes to home position
 	void goToString(); // goes to the calibrated zero position, temporary dampener
 	void setHomePos(int encoderTicks);
+	int readEncoder();
+
+	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
 
 
+	State _state = STATE_IDLE;
+
+
+	// void setState(State newState);
 	// Velocity control methods:
 
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
@@ -64,18 +78,6 @@ private:
 	float _controlInterval;
 	uint32_t _controlLoopCounter = 0;
 	int _lastPos = 0;
-
-	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
-	enum State{
-		STATE_IDLE_COAST, 
-		STATE_POSITION_CONTROL, // TODO: add current and velocity PID (maybe this is just a position PID) 
-		STATE_VELOCITY_CONTROL,
-		STATE_CURRENT_CONTROL,
-		STATE_STARTUP
-	};
-
-	State _state = STATE_STARTUP;
-
 
 	// CMSIS DSP ARM PID classes 
 	arm_pid_instance_f32 * _ArmPosPid;
