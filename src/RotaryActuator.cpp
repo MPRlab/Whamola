@@ -75,13 +75,13 @@ void RotaryActuator::calibrate(int homePosDist){
 	Timer t;
 
 	// Start driving the motor away from the string
-	_Motor->setSpeedBrake(-0.15f); // Set speed between -1.0 to 1.0
+	_Motor->setSpeedBrake(-0.15f); 
 	wait(0.5);
-	_Motor->setSpeedBrake(0.15f); // Set speed between -1.0 to 1.0
+	_Motor->setSpeedBrake(0.2f); 
 	t.start();
 
 	// Take in some measurements as a baseline
-	while(t.read() < 0.2){
+	while(t.read() < 0.25){
 		amps = _Motor->getCurrent();
 		currentSum += amps;
 		currentCount++;
@@ -89,7 +89,7 @@ void RotaryActuator::calibrate(int homePosDist){
 
 
 	avgCurrent = currentSum / currentCount;
-	float currentThreshold = avgCurrent + 0.06;
+	float currentThreshold = avgCurrent + 0.04;
 	printf("current to detect zero point on the string: %f A\n", currentThreshold);
 	currentSum = 0.0;
 	currentCount = 0;
@@ -144,8 +144,8 @@ void RotaryActuator::goHome(){
 	setPosSetpoint(_homePos);
 }
 
-int RotaryActuator::readEncoder(){
-	return _Encoder->getPulses();
+int RotaryActuator::readPos(){
+	return _pos;
 }
 
 
@@ -160,7 +160,8 @@ float RotaryActuator::clampToMotorVal(float output){
 
 // This method is called periodically on the ticker object
 void RotaryActuator::controlLoop(){
-	
+	// Timer t;
+	// t.reset();
 	_pos = _Encoder->getPulses();
 
 	if(_state == STATE_IDLE_COAST){
@@ -168,12 +169,17 @@ void RotaryActuator::controlLoop(){
 		printf("Encoder ticks: %d\n", _Encoder->getPulses());
 	}
 	else if(_state == STATE_POSITION_CONTROL){
-		float out = arm_pid_f32(this->_ArmPosPid, (float) _posSetpoint - _pos);
+		float error = (float) _posSetpoint - _pos;
+		float out = arm_pid_f32(this->_ArmPosPid, error);
+
+
+		// float out = error * 0.005f;
+
 		if(!_Motor->isFlipped())
 			out = - clampToMotorVal(out); 
 		else
 			out = clampToMotorVal(out); 
-		// printf("PID output: %f\tPosition: %d\tSetpoint: %d\n", out, _Encoder->getPulses(), _posSetpoint);
+		// printf("PID output: %f\tPosition: %d\tSetpoint: %d\tError: %f\n", out, _Encoder->getPulses(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
@@ -187,36 +193,43 @@ void RotaryActuator::controlLoop(){
 	else if(_state == STATE_CURRENT_CONTROL){
 		float current = _Motor->getCurrent(); // TODO: add current control mode
 	}
+	else if(_state == STATE_COAST_STRIKE){
+		if(_letGo){
+			_Motor->setSpeedCoast(0.0f);
+			if(_controlLoopCounter > _stopAtCount){
+				// _Motor->setSpeedBrake(0.0f);
+
+				_state = STATE_POSITION_CONTROL;
+				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+
+			}
+		}
+		else{
+			_Motor->setSpeedCoast(_motorPower);
+			// printf("Encoder ticks: %d\n", _Encoder->getPulses());
+			if(abs(_pos) < _releaseDistance){
+				_letGo = true;
+				_controlLoopCounter = 0;
+			}
+		}
+	}
 	else{ // _state == STATE_IDLE
 		//printf("Encoder ticks: %d\n", _Encoder->getPulses()); // TODO: change this to some default thing or something that does nothing
 	} 
 
 	_lastPos = _pos;
 	_controlLoopCounter++;
+
+	// printf("Execution time per loop: %f\n",t.read());
 }
 
 // TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
-void RotaryActuator::coastStrike(float encVel, int releaseDistance){
+void RotaryActuator::coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike){
 
-	// TODO: create a velocity controller and actually use it
-	// setVelSetpoint(encVel); // encoder ticks / second
-	// _state = STATE_VELOCITY_CONTROL;
-	_state = STATE_IDLE;
+	_letGo = false;
+	_motorPower = encVel; // solution for now
+	_releaseDistance = releaseDistance;
+	_stopAtCount = (int) timeWaitAfterStrike / _controlInterval;
 
-	_Motor->setSpeedCoast(encVel);
-	while(abs(_pos) > releaseDistance){ // keep at that velocity until it gets close enough to the string
-		printf("pos: %d\n", _Encoder->getPulses());
-	}
-	_state = STATE_IDLE_COAST; // Let the striker coast to bounce off the string
-	//setVelSetpoint(0.0f); // encoder ticks / second
-
-	// Bring the striker back to home position after the wait time below 
-	/* 
-	_controlLoopCounter = 0;
-	float waitTime = 0.5; // in seconds
-	while(_controlLoopCounter < _controlInterval * waitTime); 
-	*/
-	wait(0.5);
-	goHome();
-	_state = STATE_POSITION_CONTROL;
+	_state = STATE_COAST_STRIKE;
 }
