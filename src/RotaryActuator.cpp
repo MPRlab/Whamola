@@ -9,7 +9,7 @@
 #include "RotaryActuator.h"
 
 RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, 
-								float controlInterval, float pKp, float pKi, float pKd,
+								int controlInterval_ms, float pKp, float pKi, float pKd,
 								float vKp, float vKi, float vKd)
 {
 	_Encoder = Encoder;
@@ -17,8 +17,20 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	_ArmPosPid = new arm_pid_instance_f32;
 	_ArmVelPid = new arm_pid_instance_f32;
 
-	_controlInterval = controlInterval;
-	_tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
+	// Code taken from the mbed eventqueue API reference page:
+
+	// Create a queue that can hold a maximum of 32 events
+	// EventQueue queue(32 * EVENTS_EVENT_SIZE);
+	// Create a thread that'll run the event queue's dispatch function
+	// Thread t;
+
+	// Start the event queue's dispatch thread
+	t.start(callback(&queue, &EventQueue::dispatch_forever));
+
+	_controlInterval = controlInterval_ms * 1000.0;
+	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
+	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
+
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
 	_ArmPosPid->Kp = pKp;
@@ -35,15 +47,27 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 
 // This constructor uses default values for the velocity PID constants
 RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, 
-								float controlInterval, float pKp, float pKi, float pKd)
+								int controlInterval_ms, float pKp, float pKi, float pKd)
 {
 	_Encoder = Encoder;
 	_Motor = Motor;
 	_ArmPosPid = new arm_pid_instance_f32;
 	_ArmVelPid = new arm_pid_instance_f32;
 
-	_controlInterval = controlInterval;
-	_tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
+	// Code taken from the mbed eventqueue API reference page:
+
+	// Create a queue that can hold a maximum of 32 events
+	// EventQueue queue(32 * EVENTS_EVENT_SIZE);
+	// Create a thread that'll run the event queue's dispatch function
+	// Thread t;
+
+	// Start the event queue's dispatch thread
+	t.start(callback(&queue, &EventQueue::dispatch_forever));
+
+	_controlInterval = controlInterval_ms * 1000.0;
+	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
+	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
+
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
 	_ArmPosPid->Kp = pKp;
@@ -122,6 +146,7 @@ void RotaryActuator::calibrate(int homePosDist){
 	setPosSetpoint(_homePos);
 	
 	_state = STATE_POSITION_CONTROL;
+	printf("changing state to position control...\n");
 }
 
 void RotaryActuator::setPosSetpoint(int encoderSetpoint){
@@ -162,6 +187,7 @@ float RotaryActuator::clampToMotorVal(float output){
 void RotaryActuator::controlLoop(){
 	// Timer t;
 	// t.reset();
+	printf("In thread context %p\n", Thread::gettid());
 	_pos = _Encoder->getPulses();
 
 	if(_state == STATE_IDLE_COAST){
@@ -179,7 +205,8 @@ void RotaryActuator::controlLoop(){
 			out = - clampToMotorVal(out); 
 		else
 			out = clampToMotorVal(out); 
-		// printf("PID output: %f\tPosition: %d\tSetpoint: %d\tError: %f\n", out, _Encoder->getPulses(), _posSetpoint, error);
+
+		printf("PID output: %f\tPosition: %d\tSetpoint: %d\tError: %f\n", out, _Encoder->getPulses(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
@@ -199,15 +226,15 @@ void RotaryActuator::controlLoop(){
 			if(_controlLoopCounter > _stopAtCount){
 				// _Motor->setSpeedBrake(0.0f);
 
-				_state = STATE_POSITION_CONTROL;
-				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				_state = STATE_IDLE;
+				printf("Encoder now at %d, switching to STATE_IDLE\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
 			// printf("Encoder ticks: %d\n", _Encoder->getPulses());
-			if(abs(_pos) < _releaseDistance){
+			if(_controlLoopCounter > _releaseTime){
 				_letGo = true;
 				_controlLoopCounter = 0;
 			}
@@ -224,12 +251,12 @@ void RotaryActuator::controlLoop(){
 }
 
 // TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
-void RotaryActuator::coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike){
+void RotaryActuator::coastStrike(float encVel, int releaseTime, float timeWaitAfterStrike){
 
 	_letGo = false;
 	_motorPower = encVel; // solution for now
-	_releaseDistance = releaseDistance;
+	_releaseTime = releaseTime / _controlInterval;
 	_stopAtCount = (int) timeWaitAfterStrike / _controlInterval;
-
+	_controlLoopCounter = 0;
 	_state = STATE_COAST_STRIKE;
 }

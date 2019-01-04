@@ -23,13 +23,15 @@ enum State{
 	STATE_IDLE
 };
 
+
+
 class RotaryActuator
 {
 public:
 	// CONSTRUCTORS - pass these arguments in as pointers to classes (i.e. "new QEI(PD_1, PD_0, NC, STRIKER_ENCODER_RESOLUTION)")
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, float controlInterval, float pKp, float pKi, float pKd);
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, float controlInterval, float pKp, float pKi, float pKd, float vKp, float vKi, float vKd);
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, float controlInterval);
+	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd);
+	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd, float vKp, float vKi, float vKd);
+	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms);
 
 	// DESTRUCTOR
 	~RotaryActuator();
@@ -47,24 +49,24 @@ public:
 
 	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
 
-
-	State _state = STATE_IDLE;
-
-
 	// void setState(State newState);
 	// Velocity control methods:
 
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
-	void coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike); // release distance in ticks for now
+	void coastStrike(float encVel, int releaseTime, float timeWaitAfterStrike); // release distance in ticks for now
 
 	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
+	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
+	
 
+
+
+	State _state = STATE_IDLE;
 
 private:
 
 	// Private methods
-	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	float clampToMotorVal(float output); // used internally to condition PID output
 
 
@@ -83,8 +85,13 @@ private:
 	// Coast-Strike state variables
 	bool _letGo = false;
 	float _motorPower;
-	int _stopAtCount, _releaseDistance;
+	int _stopAtCount, _releaseTime;
 
+	// Code taken from the mbed eventqueue API reference page:
+	// Create a queue that can hold a maximum of 32 events
+	EventQueue queue;
+	// Create a thread that'll run the event queue's dispatch function
+	Thread t;
 
 	// CMSIS DSP ARM PID classes 
 	arm_pid_instance_f32 * _ArmPosPid;
