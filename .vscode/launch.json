@@ -1,14 +1,34 @@
+// AUTOMATICALLY GENERATED FILE. PLEASE DO NOT MODIFY IT MANUALLY
+
+// PIO Unified Debugger
+//
+// Documentation: https://docs.platformio.org/page/plus/debugging.html
+// Configuration: https://docs.platformio.org/page/projectconf/section_env_debug.html
+
 {
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "gdb",
+            "type": "platformio-debug",
             "request": "launch",
-            "cwd": "${workspaceRoot}",
-            "name": "PlatformIO Debugger",
-            "target": "/Users/igelman/Projects/whamola/.pioenvs/nucleo_f746zg/firmware.elf",
-            "gdbpath": "/Users/igelman/.platformio/penv/bin/piodebuggdb",
-            "autorun": [ "source .pioinit" ]
+            "name": "PIO Debug",
+            "executable": "/Users/music/Documents/PlatformIO/Projects/Whamola/.pioenvs/nucleo_f746zg/firmware.elf",
+            "toolchainBinDir": "/Users/music/.platformio/packages/toolchain-gccarmnoneeabi/bin",
+            "svdPath": "/Users/music/.platformio/platforms/ststm32/misc/svd/STM32F7x7.svd",
+            "preLaunchTask": {
+                "type": "PlatformIO",
+                "task": "Pre-Debug"
+            },
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "type": "platformio-debug",
+            "request": "launch",
+            "name": "PIO Debug (skip Pre-Debug)",
+            "executable": "/Users/music/Documents/PlatformIO/Projects/Whamola/.pioenvs/nucleo_f746zg/firmware.elf",
+            "toolchainBinDir": "/Users/music/.platformio/packages/toolchain-gccarmnoneeabi/bin",
+            "svdPath": "/Users/music/.platformio/platforms/ststm32/misc/svd/STM32F7x7.svd",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
