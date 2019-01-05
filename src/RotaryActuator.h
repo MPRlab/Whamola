@@ -57,7 +57,7 @@ public:
 
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
-	void coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike); // release distance in ticks for now
+	void coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike); // release distance in ticks for now
 
 	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
@@ -81,7 +81,7 @@ private:
 	float _velSetpoint;
 	int _homePos = -50;
 
-	float _controlInterval;
+	int _controlInterval_ms;
 	uint32_t _controlLoopCounter = 0;
 	int _lastPos = 0;
 

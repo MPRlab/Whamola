@@ -27,7 +27,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	// Start the event queue's dispatch thread
 	t.start(callback(&queue, &EventQueue::dispatch_forever));
 
-	_controlInterval = controlInterval_ms / 1000.0;
+	_controlInterval_ms = controlInterval_ms;
 	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
 	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
 
@@ -64,7 +64,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	// Start the event queue's dispatch thread
 	t.start(callback(&queue, &EventQueue::dispatch_forever));
 
-	_controlInterval = controlInterval_ms * 1000.0;
+	_controlInterval_ms = controlInterval_ms;
 	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
 	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
 
@@ -154,7 +154,7 @@ void RotaryActuator::setPosSetpoint(int encoderSetpoint){
 }
 
 void RotaryActuator::setVelSetpoint(float encoderVelSetpoint){ // in encoder ticks / second
-	_velSetpoint = encoderVelSetpoint * _controlInterval; // ticks/sec -> ticks/loop
+	// TODO: Implement velocity control
 }
 
 void RotaryActuator::setHomePos(int encoderTicks){
@@ -188,6 +188,7 @@ void RotaryActuator::controlLoop(){
 	// Timer t;
 	// t.reset();
 	_pos = _Encoder->getPulses();
+	float current = _Motor->getCurrent();
 
 	if(_state == STATE_IDLE_COAST){
 		_Motor->setSpeedCoast(0.0f);
@@ -217,27 +218,28 @@ void RotaryActuator::controlLoop(){
 
 	}
 	else if(_state == STATE_CURRENT_CONTROL){
-		float current = _Motor->getCurrent(); // TODO: add current control mode
+		// TODO: add current control mode
 	}
 	else if(_state == STATE_COAST_STRIKE){
 		if(_letGo){
 			_Motor->setSpeedCoast(0.0f);
-			if(_controlLoopCounter > 100){ // 100 loops = 1 second
+			if(_controlLoopCounter > _stopAtCount){ // 100 loops = 1 second
 				// _Motor->setSpeedBrake(0.0f);
 
 				_state = STATE_POSITION_CONTROL;
-				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				// printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
-			// printf("Encoder ticks: %d\n", _Encoder->getPulses());
+			printf("Encoder ticks: %d\n", _Encoder->getPulses());
 			if(abs(_pos) < _releaseDistance){
 				_letGo = true;
 				_controlLoopCounter = 0;
 			}
 		}
+		printf("Motor current: %f\tEncoder: %d\n", current, _pos);
 	}
 	else{ // _state == STATE_IDLE
 		//printf("Encoder ticks: %d\n", _Encoder->getPulses()); // TODO: change this to some default thing or something that does nothing
@@ -250,13 +252,12 @@ void RotaryActuator::controlLoop(){
 }
 
 // TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
-void RotaryActuator::coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike){
+void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike_ms){
 
 	_letGo = false;
 	_motorPower = encVel; // solution for now
 	_releaseDistance = releaseDistance;
-	float tmp = timeWaitAfterStrike / _controlInterval;
-	_stopAtCount = (int) tmp;
+	_stopAtCount = timeWaitAfterStrike_ms / _controlInterval_ms;
 	printf("_stopAtCount: %d\n", _stopAtCount);
 	_controlLoopCounter = 0;
 	_state = STATE_COAST_STRIKE;

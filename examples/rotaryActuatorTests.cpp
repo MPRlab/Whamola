@@ -63,16 +63,19 @@ int main(){
 	// pc.puts("Done calibrating left striker\n");
 
 	wait(5);
-	while(1){
-		StrikerR.coastStrike(0.6, 100, 3.0f);
-		wait(5);
+	// while(1){
+		StrikerR.coastStrike(0.6, 100, 500);
+		wait(6);
 		// StrikerR.setPosSetpoint(0);
 		// wait(5);
-		// StrikerR.setPosSetpoint(200);
+		// StrikerR.setPosSetpoint(3200);
 		// wait(5);
-		// pc.puts("done striking\n");
+		// StrikerR.setPosSetpoint(-3200);
+		// wait(5);
+
+		pc.puts("done striking\n");
 		// printf("Encoder Pose at home: %d\n", StrikerL.readEncoder());
-	}
+	// }
 
 
 
