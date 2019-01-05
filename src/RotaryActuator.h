@@ -45,8 +45,11 @@ public:
 	void goHome(); // goes to home position
 	void goToString(); // goes to the calibrated zero position, temporary dampener
 	void setHomePos(int encoderTicks);
-	int readPos();
 
+
+	// Basic Getters and setters
+	int readPos();
+	void driveMotor(float power);
 	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
 
 	// void setState(State newState);
@@ -54,7 +57,7 @@ public:
 
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
-	void coastStrike(float encVel, int releaseTime, float timeWaitAfterStrike); // release distance in ticks for now
+	void coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike); // release distance in ticks for now
 
 	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
@@ -85,7 +88,7 @@ private:
 	// Coast-Strike state variables
 	bool _letGo = false;
 	float _motorPower;
-	int _stopAtCount, _releaseTime;
+	int _stopAtCount, _releaseDistance;
 
 	// Code taken from the mbed eventqueue API reference page:
 	// Create a queue that can hold a maximum of 32 events

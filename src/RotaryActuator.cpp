@@ -27,7 +27,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	// Start the event queue's dispatch thread
 	t.start(callback(&queue, &EventQueue::dispatch_forever));
 
-	_controlInterval = controlInterval_ms * 1000.0;
+	_controlInterval = controlInterval_ms / 1000.0;
 	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
 	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
 
@@ -113,7 +113,7 @@ void RotaryActuator::calibrate(int homePosDist){
 
 
 	avgCurrent = currentSum / currentCount;
-	float currentThreshold = avgCurrent + 0.04;
+	float currentThreshold = avgCurrent + 0.025;
 	printf("current to detect zero point on the string: %f A\n", currentThreshold);
 	currentSum = 0.0;
 	currentCount = 0;
@@ -187,7 +187,6 @@ float RotaryActuator::clampToMotorVal(float output){
 void RotaryActuator::controlLoop(){
 	// Timer t;
 	// t.reset();
-	printf("In thread context %p\n", Thread::gettid());
 	_pos = _Encoder->getPulses();
 
 	if(_state == STATE_IDLE_COAST){
@@ -223,18 +222,18 @@ void RotaryActuator::controlLoop(){
 	else if(_state == STATE_COAST_STRIKE){
 		if(_letGo){
 			_Motor->setSpeedCoast(0.0f);
-			if(_controlLoopCounter > _stopAtCount){
+			if(_controlLoopCounter > 100){ // 100 loops = 1 second
 				// _Motor->setSpeedBrake(0.0f);
 
-				_state = STATE_IDLE;
-				printf("Encoder now at %d, switching to STATE_IDLE\n", _pos);
+				_state = STATE_POSITION_CONTROL;
+				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
 			// printf("Encoder ticks: %d\n", _Encoder->getPulses());
-			if(_controlLoopCounter > _releaseTime){
+			if(abs(_pos) < _releaseDistance){
 				_letGo = true;
 				_controlLoopCounter = 0;
 			}
@@ -251,12 +250,18 @@ void RotaryActuator::controlLoop(){
 }
 
 // TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
-void RotaryActuator::coastStrike(float encVel, int releaseTime, float timeWaitAfterStrike){
+void RotaryActuator::coastStrike(float encVel, int releaseDistance, float timeWaitAfterStrike){
 
 	_letGo = false;
 	_motorPower = encVel; // solution for now
-	_releaseTime = releaseTime / _controlInterval;
-	_stopAtCount = (int) timeWaitAfterStrike / _controlInterval;
+	_releaseDistance = releaseDistance;
+	float tmp = timeWaitAfterStrike / _controlInterval;
+	_stopAtCount = (int) tmp;
+	printf("_stopAtCount: %d\n", _stopAtCount);
 	_controlLoopCounter = 0;
 	_state = STATE_COAST_STRIKE;
+}
+
+void RotaryActuator::driveMotor(float power){
+	_Motor->setSpeedBrake(power);
 }
