@@ -1,3 +1,6 @@
 [submodule "lib/mbed_Pololu_DualMC33926_MotorShield"]
 	path = lib/mbed_Pololu_DualMC33926_MotorShield
 	url = git@github.com:MPRlab/mbed_Pololu_DualMC33926_MotorShield.git
+[submodule "lib/ODriveMbed"]
+	path = lib/ODriveMbed
+	url = git@github.com:stoneil/ODriveMbed.git
