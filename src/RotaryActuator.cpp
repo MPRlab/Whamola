@@ -8,7 +8,7 @@
 
 #include "RotaryActuator.h"
 
-RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, 
+RotaryActuator::RotaryActuator(QEIx4 * Encoder, SingleMC33926MotorController * Motor, 
 								int controlInterval_ms, float pKp, float pKi, float pKd,
 								float vKp, float vKi, float vKd)
 {
@@ -25,11 +25,11 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	// Thread t;
 
 	// Start the event queue's dispatch thread
-	t.start(callback(&queue, &EventQueue::dispatch_forever));
+	// t.start(callback(&queue, &EventQueue::dispatch_forever));
 
 	_controlInterval_ms = controlInterval_ms;
 	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
-	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
+	// queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
 
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
@@ -46,7 +46,7 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 }
 
 // This constructor uses default values for the velocity PID constants
-RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, 
+RotaryActuator::RotaryActuator(QEIx4 * Encoder, SingleMC33926MotorController * Motor, 
 								int controlInterval_ms, float pKp, float pKi, float pKd)
 {
 	_Encoder = Encoder;
@@ -62,11 +62,11 @@ RotaryActuator::RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Mot
 	// Thread t;
 
 	// Start the event queue's dispatch thread
-	t.start(callback(&queue, &EventQueue::dispatch_forever));
+	// t.start(callback(&queue, &EventQueue::dispatch_forever));
 
 	_controlInterval_ms = controlInterval_ms;
 	// _tick.attach(this, &RotaryActuator::controlLoop, controlInterval);
-	queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
+	// queue.call_every(controlInterval_ms, this, &RotaryActuator::controlLoop);
 
 
 	// Set PID Parameters following this forum post (https://os.mbed.com/questions/1904/mbed-DSP-Library-PID-Controller/)
@@ -88,6 +88,7 @@ RotaryActuator::~RotaryActuator(){
 	delete _ArmVelPid;
 }
 
+
 void RotaryActuator::calibrate(int homePosDist){
 	float amps;
 	float avgCurrent = 0.0f;
@@ -100,7 +101,7 @@ void RotaryActuator::calibrate(int homePosDist){
 
 	// Start driving the motor away from the string
 	_Motor->setSpeedBrake(-0.15f); 
-	wait(0.5);
+	wait(1);
 	_Motor->setSpeedBrake(0.2f); 
 	t.start();
 
@@ -137,16 +138,22 @@ void RotaryActuator::calibrate(int homePosDist){
 	// printf("avgCurrent: %f A\n", avgCurrent);
 
 	//pc.puts("stopping\n");
-	_Encoder->reset();
-	_Motor->setSpeedBrake(0.0f);
+	_Motor->setSpeedCoast(0.0f);
+	wait(0.25);
+	_Encoder->write(0);
 
 
 	// sets home position to be slightly above where the string is
-	setHomePos(_Encoder->getPulses() - homePosDist);
-	setPosSetpoint(_homePos);
+	setHomePos(_Encoder->getPosition() - homePosDist);
+
+	setPosSetpoint(_Encoder->getPosition() - homePosDist);
 	
 	_state = STATE_POSITION_CONTROL;
-	printf("changing state to position control...\n");
+	printf("encoder reading: %f, home position at %d changing state to position control...\n", _Encoder->getPosition(), _homePos);
+}
+
+void RotaryActuator::setCurrentOffsetThreshold(float currentOffsetThresholdInput){
+	_currentOffsetThreshold = currentOffsetThresholdInput;
 }
 
 void RotaryActuator::setPosSetpoint(int encoderSetpoint){
@@ -169,8 +176,11 @@ void RotaryActuator::goHome(){
 	setPosSetpoint(_homePos);
 }
 
-int RotaryActuator::readPos(){
-	return _pos;
+float RotaryActuator::readPos(){
+	return _Encoder->getPosition();
+}
+void RotaryActuator::resetEncoder(){
+	_Encoder->write(0);
 }
 
 
@@ -187,12 +197,12 @@ float RotaryActuator::clampToMotorVal(float output){
 void RotaryActuator::controlLoop(){
 	// Timer t;
 	// t.reset();
-	_pos = _Encoder->getPulses();
+	_pos = _Encoder->getPosition();
 	float current = _Motor->getCurrent();
 
 	if(_state == STATE_IDLE_COAST){
 		_Motor->setSpeedCoast(0.0f);
-		printf("Encoder ticks: %d\n", _Encoder->getPulses());
+		printf("Encoder ticks: %f\n", _Encoder->getPosition());
 	}
 	else if(_state == STATE_POSITION_CONTROL){
 		float error = (float) _posSetpoint - _pos;
@@ -201,12 +211,12 @@ void RotaryActuator::controlLoop(){
 
 		// float out = error * 0.005f;
 
-		if(!_Motor->isFlipped())
-			out = - clampToMotorVal(out); 
-		else
-			out = clampToMotorVal(out); 
+		// if(!_Motor->isFlipped())
+		// 	out = - clampToMotorVal(out); 
+		// else
+		// 	out = clampToMotorVal(out); 
 
-		printf("PID output: %f\tPosition: %d\tSetpoint: %d\tError: %f\n", out, _Encoder->getPulses(), _posSetpoint, error);
+		printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
@@ -222,27 +232,28 @@ void RotaryActuator::controlLoop(){
 	}
 	else if(_state == STATE_COAST_STRIKE){
 		if(_letGo){
-			_Motor->setSpeedCoast(0.0f);
+			// _Motor->setSpeedCoast(0.0f);
+			_Motor->disable();
 			if(_controlLoopCounter > _stopAtCount){ // 100 loops = 1 second
 				// _Motor->setSpeedBrake(0.0f);
 
 				_state = STATE_POSITION_CONTROL;
-				// printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
-			printf("Encoder ticks: %d\n", _Encoder->getPulses());
-			if(abs(_pos) < _releaseDistance){
+			printf("Encoder ticks: %f\n", _Encoder->getPosition());
+			if(_Encoder->getPosition() > - abs(_releaseDistance)){
 				_letGo = true;
 				_controlLoopCounter = 0;
 			}
 		}
-		printf("Motor current: %f\tEncoder: %d\n", current, _pos);
+		// printf("Motor current: %f\tEncoder: %f\n", current, _Encoder->getPosition());
 	}
 	else{ // _state == STATE_IDLE
-		//printf("Encoder ticks: %d\n", _Encoder->getPulses()); // TODO: change this to some default thing or something that does nothing
+		//printf("Encoder ticks: %d\n", _Encoder->getPosition()); // TODO: change this to some default thing or something that does nothing
 	} 
 
 	_lastPos = _pos;

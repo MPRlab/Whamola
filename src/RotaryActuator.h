@@ -12,6 +12,7 @@
 #include "mbed.h"
 #include "SingleMC33926MotorController.h"
 #include <QEI.h>
+#include <QEIx4.h>
 #include <dsp.h>
 
 enum State{
@@ -29,9 +30,9 @@ class RotaryActuator
 {
 public:
 	// CONSTRUCTORS - pass these arguments in as pointers to classes (i.e. "new QEI(PD_1, PD_0, NC, STRIKER_ENCODER_RESOLUTION)")
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd);
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd, float vKp, float vKi, float vKd);
-	RotaryActuator(QEI * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms);
+	RotaryActuator(QEIx4 * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd);
+	RotaryActuator(QEIx4 * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms, float pKp, float pKi, float pKd, float vKp, float vKi, float vKd);
+	RotaryActuator(QEIx4 * Encoder, SingleMC33926MotorController * Motor, int controlInterval_ms);
 
 	// DESTRUCTOR
 	~RotaryActuator();
@@ -45,10 +46,12 @@ public:
 	void goHome(); // goes to home position
 	void goToString(); // goes to the calibrated zero position, temporary dampener
 	void setHomePos(int encoderTicks);
+	void setCurrentOffsetThreshold(float currentOffsetThresholdInput);
 
 
 	// Basic Getters and setters
-	int readPos();
+	float readPos();
+	void resetEncoder();
 	void driveMotor(float power);
 	// (still figruing this out) For going between holding a position using PID and executing a gesture (maybe a trajectory or simply an impulse drive coast)
 
@@ -62,9 +65,6 @@ public:
 	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	
-
-
-
 	State _state = STATE_IDLE;
 
 private:
@@ -77,13 +77,14 @@ private:
 	Ticker _tick;
 	bool _isCalibrated = false;
 	int _posSetpoint;
-	int _pos; // *** Might need to change this to a float
+	float _pos; // *** Might need to change this to a float
 	float _velSetpoint;
-	int _homePos = -50;
+	int _homePos;
 
 	int _controlInterval_ms;
 	uint32_t _controlLoopCounter = 0;
 	int _lastPos = 0;
+	float _currentOffsetThreshold = 0.025;
 
 	// Coast-Strike state variables
 	bool _letGo = false;
@@ -92,16 +93,16 @@ private:
 
 	// Code taken from the mbed eventqueue API reference page:
 	// Create a queue that can hold a maximum of 32 events
-	EventQueue queue;
+	// EventQueue queue;
 	// Create a thread that'll run the event queue's dispatch function
-	Thread t;
+	// Thread t;
 
 	// CMSIS DSP ARM PID classes 
 	arm_pid_instance_f32 * _ArmPosPid;
 	arm_pid_instance_f32 * _ArmVelPid;
 
 	// Passed in member classes
-	QEI * _Encoder;
+	QEIx4 * _Encoder;
 	SingleMC33926MotorController * _Motor;
 
 };
