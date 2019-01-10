@@ -22,13 +22,13 @@ DigitalIn stopButton(USER_BUTTON);
 // Left striker Actuator Init
 RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D7, D13, A1, PE_14, PB_11, false), 
-						loopTime, 0.0006f, 0.0f, 0.00004f);
+						loopTime, 0.0005f, 0.0f, 0.0001f);
 
 
 // Dampener Actuator Init
 RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D11, D15, A0, D3, D5, true), 
-						loopTime, 0.0006f, 0.0f, 0.0f);
+						loopTime, 0.001f, 0.0f, 0.0004f);
 
 
 Thread t;
@@ -37,7 +37,7 @@ EventQueue queue;
 
 int main(){
 	
-	Dampener.setCurrentOffsetThreshold(0.015f);
+	Dampener.setCurrentOffsetThreshold(0.010f);
 
 	while(!stopButton);
 	/*
@@ -66,7 +66,7 @@ int main(){
 	// pc.puts("Done calibrating right striker now\n");
 	
 	pc.puts("calibrating left striker now...\n");
-	StrikerL.calibrate(650);
+	StrikerL.calibrate(600);
 	pc.puts("Done calibrating left striker\n");
 
 	pc.puts("calibrating dampener now...\n");
@@ -81,12 +81,17 @@ int main(){
 	while(!stopButton){
 		// StrikerR.coastStrike(0.85, 350, 500);
 		// wait(0.5);
-		StrikerL.coastStrike(0.7, 400, 500);
+		// StrikerL.setPosSetpoint(-800);
+		wait(2);
+		// StrikerL.coastStrike(0.7, 400, 500);
 		wait(0.5);
+		StrikerL.coastStrike(0.7, 250, 500);
 		Dampener.goToString();
 		wait(0.5);
 		Dampener.goHome();
-		
+		// StrikerL.goHome();
+		wait(1);
+
 		// StrikerR.goHome();
 		// StrikerR.setPosSetpoint(0);
 		// wait(5);

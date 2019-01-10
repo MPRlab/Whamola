@@ -216,7 +216,7 @@ void RotaryActuator::controlLoop(){
 		// else
 		// 	out = clampToMotorVal(out); 
 
-		printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
+		// printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
@@ -232,8 +232,8 @@ void RotaryActuator::controlLoop(){
 	}
 	else if(_state == STATE_COAST_STRIKE){
 		if(_letGo){
-			// _Motor->setSpeedCoast(0.0f);
-			_Motor->disable();
+			_Motor->setSpeedCoast(0.0f);
+			// _Motor->disable();
 			if(_controlLoopCounter > _stopAtCount){ // 100 loops = 1 second
 				// _Motor->setSpeedBrake(0.0f);
 
@@ -269,9 +269,14 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWait
 	_motorPower = encVel; // solution for now
 	_releaseDistance = releaseDistance;
 	_stopAtCount = timeWaitAfterStrike_ms / _controlInterval_ms;
-	printf("_stopAtCount: %d\n", _stopAtCount);
-	_controlLoopCounter = 0;
-	_state = STATE_COAST_STRIKE;
+	if(_Encoder->getPosition() > - abs(_releaseDistance)){
+		printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
+
+	}
+	else{
+		_controlLoopCounter = 0;
+		_state = STATE_COAST_STRIKE;
+	}
 }
 
 void RotaryActuator::driveMotor(float power){

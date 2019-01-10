@@ -66,6 +66,7 @@ public:
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	
 	State _state = STATE_IDLE;
+	int _homePos;
 
 private:
 
@@ -79,7 +80,6 @@ private:
 	int _posSetpoint;
 	float _pos; // *** Might need to change this to a float
 	float _velSetpoint;
-	int _homePos;
 
 	int _controlInterval_ms;
 	uint32_t _controlLoopCounter = 0;
