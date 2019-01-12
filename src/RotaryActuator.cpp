@@ -271,13 +271,25 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWait
 	_stopAtCount = timeWaitAfterStrike_ms / _controlInterval_ms;
 	if(_Encoder->getPosition() > - abs(_releaseDistance)){
 		printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
-
 	}
 	else{
 		_controlLoopCounter = 0;
 		_state = STATE_COAST_STRIKE;
 	}
 }
+
+
+void RotaryActuator::dampenString(EventQueue * queue, bool hard, int time_ms){
+	//TODO: implement a hard vs. soft dampening
+	// _stopAtCount = time_ms / _controlInterval_ms;
+	// _controlLoopCounter = 0;
+	_state = STATE_POSITION_CONTROL;
+	// goToString();
+	setPosSetpoint(-20);
+	queue->call_in(time_ms, this, &RotaryActuator::goHome);
+
+}
+
 
 void RotaryActuator::driveMotor(float power){
 	_Motor->setSpeedBrake(power);

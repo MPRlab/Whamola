@@ -62,7 +62,8 @@ public:
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
 	void coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike); // release distance in ticks for now
 
-	void dampenString(bool hard); // TODO: dampen string hard or soft by controlling for current 
+
+	void dampenString(EventQueue * queue, bool hard, int time_ms); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	
 	State _state = STATE_IDLE;
@@ -91,6 +92,7 @@ private:
 	float _motorPower;
 	int _stopAtCount, _releaseDistance;
 
+	
 	// Code taken from the mbed eventqueue API reference page:
 	// Create a queue that can hold a maximum of 32 events
 	// EventQueue queue;

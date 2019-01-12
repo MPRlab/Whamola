@@ -15,6 +15,7 @@ DigitalIn stopButton(USER_BUTTON);
 Serial odrive_serial(ODRIVE2TX, ODRIVE2RX);
 ODriveMbed odrive(odrive_serial);
 
+// void dampenString(RotaryActuator * Actuator, EventQueue * queue, int time_ms);
 
 // Init variables
 int loopTime = 3; // milliseconds
@@ -43,7 +44,7 @@ RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 int main(){
 	pc.baud(115200);
 	odrive_serial.baud(115200);
-	Dampener.setCurrentOffsetThreshold(0.008f);
+	Dampener.setCurrentOffsetThreshold(0.005f);
 
 
     while(!stopButton);
@@ -83,23 +84,27 @@ int main(){
 
 	while(1){
 		// printf("State of the striker Thread: %d\n",thread.get_state());
-		Dampener.goToString();
-		wait(0.5);
-		Dampener.goHome();
-		wait(0.5);
+		// Dampener.goToString();
+		// wait(0.5);
+		// Dampener.goHome();
+		// wait(0.5);
 		odrive.setPosition(axis, 14000);
 		StrikerL.coastStrike(0.75, 350, 500);
 		// wait(0.25);
 		// StrikerR.coastStrike(0.8, 400, 500);
+		Dampener.dampenString(&queue, true, 500);
 		wait(2.5);
 		odrive.setPosition(axis, 20000);
 		StrikerL.coastStrike(0.85, 250, 500);
 		// wait(0.25);
 		// StrikerR.coastStrike(0.7, 400, 500);
-		wait(0.75);
-		Dampener.goToString();
-		wait(1.0);
-		Dampener.goHome();
-		wait(0.5);
+
+		// wait(0.75);
+		// Dampener.goToString();
+		// wait(1.0);
+		// Dampener.goHome();
+		wait(1);
+		Dampener.dampenString(&queue, true, 500);
+		wait(1);
 	}
 }
