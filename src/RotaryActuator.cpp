@@ -285,7 +285,7 @@ void RotaryActuator::dampenString(EventQueue * queue, bool hard, int time_ms){
 	// _controlLoopCounter = 0;
 	_state = STATE_POSITION_CONTROL;
 	// goToString();
-	setPosSetpoint(-20);
+	setPosSetpoint(20);
 	queue->call_in(time_ms, this, &RotaryActuator::goHome);
 
 }

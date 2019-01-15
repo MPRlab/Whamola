@@ -6,7 +6,7 @@
 #include <string>
 
 #define VERBOSE 1
-#define TEST 1
+#define TEST 0
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
@@ -109,7 +109,7 @@ int main() {
 		//Check that the message is for this instrument
 		if(strcmp(osc.getInstrumentName(msg), instrumentName) == 0) {
 
-			//printf("Message for this instrument\r\n");
+			printf("Message for this instrument\r\n");
 
 			//Process the message based on type
 			char* messageType = osc.getMessageType(msg);
@@ -131,13 +131,19 @@ int main() {
 
 					if(velocity !=0){ // Strike the String
 						float motorPower = (float) velocity/100.0;
+						static bool i = true;
+						if(i){
+							StrikerL.coastStrike(motorPower, 350, 500);
+						}
+						else{
+							StrikerR.coastStrike(motorPower, 350, 500);
 
-						StrikerL.coastStrike(motorPower, 350, 500);
+						}
+						i = !i;
 						led2 = 1;
 					}
 					else{ // Dapen the string
-						// Dampener.dampenString(&queue, true, 500); // Damps the string
-						pc.puts("should dampen string here\n");
+						Dampener.dampenString(&queue, true, 200); // Damps the string for 200 ms
 						led2 = 0;
 
 					}

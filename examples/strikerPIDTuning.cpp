@@ -1,3 +1,22 @@
+/**
+ * main.cpp
+ *
+ * OSC-Ethernet Example Code
+ *
+ * Written for and tested on the STM32 Nucleo F767ZI
+ *
+ * To communicate with the MPR Lab Multi Solenoid Moddule
+ *     version 12.6.2 or later
+ *
+ *
+ * @author  Michael Sidler
+ * @since   11/20/2018
+ * @version 1
+ *
+ * Changelog:
+ * - 1.0 Initial commit
+ */
+
 #include "mbed.h"
 #include "EthernetInterface.h"
 #include "osc_client.h"
@@ -6,12 +25,10 @@
 #include <string>
 
 #define VERBOSE 1
-#define TEST 1
+#define TEST 0
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
-
-char* instrumentName;
 
 //Setup digital outputs
 DigitalOut led1(LED1);	//Green running LED
@@ -72,95 +89,23 @@ int main() {
 	calibrateODrive();
 	calibrateStrikers();
 
-	char name[] = "Whamola";
-	instrumentName = name;
 
-	printf("Starting Instrunemt\r\n");
 
-	//Turn on all LEDs
-	led1 = 1;
-	led2 = 2;
-	led3 = 3;
+	int firstPose = -800;
+	int secondPose = -400;
 
-	//Setup ethernet interface
-	EthernetInterface eth;
-	eth.connect();
-	if(VERBOSE) printf("Client IP Address:     %s\r\n", eth.get_ip_address());
-	led3 = 0;	//turn off red LED
-
-	//Setup OSC client
-	OSCClient osc(&eth, instrumentName);
-	osc.connect();
-	if(VERBOSE) printf("OSC controller IP Address: %s\r\n", osc.get_controller_ip());
-	led2 = 0;	//turn off blue LED
-	
-	//Create a pointer to an OSC Message
-	OSCMessage* msg = (OSCMessage*) malloc(sizeof(OSCMessage));
-
-	//Variable to store the OSC message size
-	unsigned int size;
-	
-	//Blocking Example
-    while(true) {
-        
-        //get a new message and the size of the message
-		osc.waitForMessage(msg);
-
-		//Check that the message is for this instrument
-		if(strcmp(osc.getInstrumentName(msg), instrumentName) == 0) {
-
-			//printf("Message for this instrument\r\n");
-
-			//Process the message based on type
-			char* messageType = osc.getMessageType(msg);
-
-			 // Play a specific note
-			if(strcmp(messageType, "play") == 0) {
-
-				//printf("Is a play message\r\n");
-
-				// Check that the messages is the right format
-				if(strcmp(msg->format, ",ii") == 0) { // two ints
-					
-					uint32_t pitch 	  = osc.getIntAtIndex(msg, 0);
-					uint32_t velocity = osc.getIntAtIndex(msg, 1);
-
-					printf("Pitch %d, velocity %d\r\n",pitch,velocity);
-
-					// TODO: command ODrive position to move to a given note
-
-					if(velocity !=0){ // Strike the String
-						float motorPower = (float) velocity/100.0;
-
-						StrikerL.coastStrike(motorPower, 350, 500);
-						led2 = 1;
-					}
-					else{ // Dapen the string
-						// Dampener.dampenString(&queue, true, 500); // Damps the string
-						pc.puts("should dampen string here\n");
-						led2 = 0;
-
-					}
-					//TODO: play the note
-
-				}
-			}
-			// Turn off all notes
-			else if(strcmp(messageType, "allNotesOff") == 0) {
-
-				Dampener.dampenString(&queue, true, 500); // Damps the string for 500 ms
-
-				//TODO: All notes off
-
-			}
-		}
-		else {
-			//Not intended for this instrument
-		}
-
-		printf("\r\n");
-    }
-    return 0;
+	while(!userButton){
+		pc.puts("going home\n");
+		// Dampener.setPosSetpoint(firstPose);
+		Dampener.goHome();
+		wait(2);
+		StrikerR.coastStrike(0.75, 400, 200);
+		wait(1.5);
+		pc.puts("striking now\n");
+		// Dampener.setPosSetpoint(secondPose);
+		Dampener.dampenString(&queue, true, 500);
+		wait(5);
+	}
 }
 
 
@@ -224,4 +169,5 @@ void calibrateODrive(){
 	odrive.setPosition(axis, 10000);
 
 	// TODO: Add calbration sequence that will find different note values
+
 }
