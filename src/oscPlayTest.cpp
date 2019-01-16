@@ -6,7 +6,7 @@
 #include <string>
 
 #define VERBOSE 1
-#define TEST 1
+#define TEST 0
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
@@ -41,20 +41,20 @@ EventQueue queue;
 // Right striker Actuator Init
 RotaryActuator StrikerR(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false), 
-						loopTime, 0.0005f, 0.0f, 0.0001f);
+						loopTime, 0.001f, 0.0f, 0.0001f);
 // SingleMC33926MotorController * rightStriker =  new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false);
 
 
 // Left striker Actuator Init
 RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D7, D13, A1, PE_14, PB_11, false), 
-						loopTime, 0.0005f, 0.0f, 0.0001f);
+						loopTime, 0.001f, 0.0f, 0.0001f);
 
 
 // Dampener Actuator Init
-RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
-						new SingleMC33926MotorController(D11, D15, A0, D3, D5, true), 
-						loopTime, 0.001f, 0.0f, 0.00012f);
+// RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+// 						new SingleMC33926MotorController(D11, D15, A0, D3, D5, true), 
+// 						loopTime, 0.001f, 0.0f, 0.00012f);
 
 
 
@@ -132,10 +132,17 @@ int main() {
 					if(velocity !=0){ // Strike the String
 						float motorPower = (float) velocity/100.0;
 
-						StrikerL.coastStrike(motorPower, 350, 500);
+						static bool leftStrikerTurn = false;
+						if(leftStrikerTurn)
+							StrikerL.coastStrike(motorPower, 400, 500);
+						else
+							StrikerR.coastStrike(motorPower, 400, 500);
+
+						leftStrikerTurn = !leftStrikerTurn;
+
 						led2 = 1;
 					}
-					else{ // Dapen the string
+					else{ // Dampen the string
 						// Dampener.dampenString(&queue, true, 500); // Damps the string
 						pc.puts("should dampen string here\n");
 						led2 = 0;
@@ -148,7 +155,7 @@ int main() {
 			// Turn off all notes
 			else if(strcmp(messageType, "allNotesOff") == 0) {
 
-				Dampener.dampenString(&queue, true, 500); // Damps the string for 500 ms
+				// Dampener.dampenString(&queue, true, 500); // Damps the string for 500 ms
 
 				//TODO: All notes off
 
@@ -166,7 +173,7 @@ int main() {
 
 void calibrateStrikers(){
 
-	Dampener.setCurrentOffsetThreshold(0.005f);
+	// Dampener.setCurrentOffsetThreshold(0.005f);
 
     // while(!stopButton);
 
@@ -176,7 +183,7 @@ void calibrateStrikers(){
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
 	queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
-	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
+	// queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
 	pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
 	StrikerR.calibrate(700);
@@ -186,9 +193,9 @@ void calibrateStrikers(){
 	StrikerL.calibrate(700);
 	pc.puts("Done calibrating left striker\n");
 
-	pc.puts("calibrating dampener now...\n");
-	Dampener.calibrate(400);
-	pc.puts("Done calibrating dampener\n");
+	// pc.puts("calibrating dampener now...\n");
+	// Dampener.calibrate(400);
+	// pc.puts("Done calibrating dampener\n");
 
 	if(TEST){
 		wait(3);
@@ -196,8 +203,8 @@ void calibrateStrikers(){
 		wait(3);
 		StrikerR.coastStrike(0.75, 350, 200);
 		wait(3);
-		Dampener.dampenString(&queue, true, 500);
-		wait(3);
+		// Dampener.dampenString(&queue, true, 500);
+		// wait(3);
 	}
 }
 
@@ -206,6 +213,19 @@ void calibrateODrive(){
 	int axis = 0;
 
 	pc.puts("Checking ODrive now...\n");
+	while(odrive.readState(axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
+
+	odrive.setControlMode(axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
+	wait(1); // Hopefully this actually changes to Current control
+	odrive.setCurrent(axis, 2);
+	wait(1);
+	odrive.setCurrent(axis, 0);
+	float zeroCurrentPose = odrive.getPositionEstimate(axis);
+
+	// Set position to be zero to be safe
+	odrive.setPosition(axis, 0);
+	wait(2);
+	// Now switch back to position control
 	if(!odrive.setControlMode(axis, ODriveMbed::CTRL_MODE_POSITION_CONTROL, true))
 		pc.printf("something went wrong and the control mode was not successfully set, current mode is a %d\n", odrive.readControlMode(axis));
 	else
@@ -221,7 +241,7 @@ void calibrateODrive(){
 		odrive.setPosition(axis, 0);
 		wait(0.1);
 	}
-	odrive.setPosition(axis, 10000);
+	odrive.setPosition(axis, (int) zeroCurrentPose + 5000);
 
 	// TODO: Add calbration sequence that will find different note values
 }
