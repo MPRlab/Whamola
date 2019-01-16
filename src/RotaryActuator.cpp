@@ -115,7 +115,7 @@ void RotaryActuator::calibrate(int homePosDist){
 
 	avgCurrent = currentSum / currentCount;
 	float currentThreshold = avgCurrent + 0.025;
-	printf("current to detect zero point on the string: %f A\n", currentThreshold);
+	if(printEnabled) printf("current to detect zero point on the string: %f A\n", currentThreshold);
 	currentSum = 0.0;
 	currentCount = 0;
 
@@ -129,7 +129,7 @@ void RotaryActuator::calibrate(int homePosDist){
 		if(t.read() > 0.25){
 			t.reset();
 			avgCurrent = currentSum / currentCount;
-			printf("avgCurrent: %f A\n", avgCurrent);
+			if(printEnabled) printf("avgCurrent: %f A\n", avgCurrent);
 			currentSum = 0;
 			currentCount = 0;
 		}
@@ -149,7 +149,7 @@ void RotaryActuator::calibrate(int homePosDist){
 	setPosSetpoint(_Encoder->getPosition() - homePosDist);
 	
 	_state = STATE_POSITION_CONTROL;
-	printf("encoder reading: %f, home position at %d changing state to position control...\n", _Encoder->getPosition(), _homePos);
+	if(printEnabled) printf("encoder reading: %f, home position at %d changing state to position control...\n", _Encoder->getPosition(), _homePos);
 }
 
 void RotaryActuator::setCurrentOffsetThreshold(float currentOffsetThresholdInput){
@@ -170,10 +170,13 @@ void RotaryActuator::setHomePos(int encoderTicks){
 
 void RotaryActuator::goToString(){
 	setPosSetpoint(0);
+	this->printEnabled = true;
+
 }
 
 void RotaryActuator::goHome(){
 	setPosSetpoint(_homePos);
+	this->printEnabled = false;
 }
 
 float RotaryActuator::readPos(){
@@ -202,7 +205,7 @@ void RotaryActuator::controlLoop(){
 
 	if(_state == STATE_IDLE_COAST){
 		_Motor->setSpeedCoast(0.0f);
-		printf("Encoder ticks: %f\n", _Encoder->getPosition());
+		if(printEnabled) printf("Encoder ticks: %f\n", _Encoder->getPosition());
 	}
 	else if(_state == STATE_POSITION_CONTROL){
 		float error = (float) _posSetpoint - _pos;
@@ -216,7 +219,7 @@ void RotaryActuator::controlLoop(){
 		// else
 		// 	out = clampToMotorVal(out); 
 
-		// printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
+		if(printEnabled) printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
 	}
@@ -238,13 +241,13 @@ void RotaryActuator::controlLoop(){
 				// _Motor->setSpeedBrake(0.0f);
 
 				_state = STATE_POSITION_CONTROL;
-				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				if(printEnabled) printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
-			printf("Encoder ticks: %f\n", _Encoder->getPosition());
+			if(printEnabled) printf("Encoder ticks: %f\n", _Encoder->getPosition());
 			if(_Encoder->getPosition() > - abs(_releaseDistance)){
 				_letGo = true;
 				_controlLoopCounter = 0;
@@ -270,7 +273,7 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWait
 	_releaseDistance = releaseDistance;
 	_stopAtCount = timeWaitAfterStrike_ms / _controlInterval_ms;
 	if(_Encoder->getPosition() > - abs(_releaseDistance)){
-		printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
+		if(printEnabled) printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
 	}
 	else{
 		_controlLoopCounter = 0;
@@ -287,6 +290,7 @@ void RotaryActuator::dampenString(EventQueue * queue, bool hard, int time_ms){
 	// goToString();
 	setPosSetpoint(20);
 	queue->call_in(time_ms, this, &RotaryActuator::goHome);
+	this->printEnabled = true;
 
 }
 

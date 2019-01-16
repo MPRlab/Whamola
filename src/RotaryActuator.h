@@ -68,6 +68,7 @@ public:
 	
 	State _state = STATE_IDLE;
 	int _homePos;
+	bool printEnabled = false;
 
 private:
 

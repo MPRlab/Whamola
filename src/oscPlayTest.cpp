@@ -6,7 +6,7 @@
 #include <string>
 
 #define VERBOSE 1
-#define TEST 0
+#define TEST 1
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
@@ -52,9 +52,9 @@ RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 
 
 // Dampener Actuator Init
-// RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
-// 						new SingleMC33926MotorController(D11, D15, A0, D3, D5, true), 
-// 						loopTime, 0.001f, 0.0f, 0.00012f);
+RotaryActuator Dampener(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+						new SingleMC33926MotorController(D11, D15, A0, D3, D5, true), 
+						loopTime, 0.001f, 0.0f, 0.00012f);
 
 
 
@@ -64,7 +64,7 @@ RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 int main() {
 	pc.baud(115200);
 	odrive_serial.baud(115200);
-	//set the instrument name
+	// Dampener.printEnabled = true;
 
 	while(!userButton){}
 
@@ -143,8 +143,12 @@ int main() {
 						led2 = 1;
 					}
 					else{ // Dampen the string
-						// Dampener.dampenString(&queue, true, 500); // Damps the string
 						pc.puts("should dampen string here\n");
+						// Dampener.dampenString(&queue, true, 500); // Damps the string
+						pc.puts("using goToString() here\n");
+						Dampener.goToString();
+						wait_ms(500);
+						Dampener.goHome();
 						led2 = 0;
 
 					}
@@ -173,7 +177,7 @@ int main() {
 
 void calibrateStrikers(){
 
-	// Dampener.setCurrentOffsetThreshold(0.005f);
+	Dampener.setCurrentOffsetThreshold(0.005f);
 
     // while(!stopButton);
 
@@ -183,7 +187,7 @@ void calibrateStrikers(){
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
 	queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
-	// queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
+	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
 	pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
 	StrikerR.calibrate(700);
@@ -193,9 +197,9 @@ void calibrateStrikers(){
 	StrikerL.calibrate(700);
 	pc.puts("Done calibrating left striker\n");
 
-	// pc.puts("calibrating dampener now...\n");
-	// Dampener.calibrate(400);
-	// pc.puts("Done calibrating dampener\n");
+	pc.puts("calibrating dampener now...\n");
+	Dampener.calibrate(400);
+	pc.puts("Done calibrating dampener\n");
 
 	if(TEST){
 		wait(3);
@@ -203,8 +207,8 @@ void calibrateStrikers(){
 		wait(3);
 		StrikerR.coastStrike(0.75, 350, 200);
 		wait(3);
-		// Dampener.dampenString(&queue, true, 500);
-		// wait(3);
+		Dampener.dampenString(&queue, true, 500);
+		wait(3);
 	}
 }
 
