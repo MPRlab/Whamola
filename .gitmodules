@@ -4,3 +4,6 @@
 [submodule "lib/ODriveMbed"]
 	path = lib/ODriveMbed
 	url = git@github.com:stoneil/ODriveMbed.git
+[submodule "lib/OSC-Client"]
+	path = lib/OSC-Client
+	url = git@github.com:MPRlab/OSC-Client.git
