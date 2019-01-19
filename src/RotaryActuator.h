@@ -21,6 +21,7 @@ enum State{
 	STATE_VELOCITY_CONTROL,
 	STATE_CURRENT_CONTROL,
 	STATE_COAST_STRIKE,
+	STATE_DAMPENING,
 	STATE_IDLE
 };
 
@@ -63,7 +64,7 @@ public:
 	void coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike); // release distance in ticks for now
 
 
-	void dampenString(EventQueue * queue, bool hard, int time_ms); // TODO: dampen string hard or soft by controlling for current 
+	void dampenString(bool hard, int time_ms); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	
 	State _state = STATE_IDLE;

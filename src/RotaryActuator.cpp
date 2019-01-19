@@ -211,14 +211,6 @@ void RotaryActuator::controlLoop(){
 		float error = (float) _posSetpoint - _pos;
 		float out = arm_pid_f32(this->_ArmPosPid, error);
 
-
-		// float out = error * 0.005f;
-
-		// if(!_Motor->isFlipped())
-		// 	out = - clampToMotorVal(out); 
-		// else
-		// 	out = clampToMotorVal(out); 
-
 		if(printEnabled) printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
@@ -255,6 +247,20 @@ void RotaryActuator::controlLoop(){
 		}
 		// printf("Motor current: %f\tEncoder: %f\n", current, _Encoder->getPosition());
 	}
+	else if(_state == STATE_DAMPENING){
+		if(_controlLoopCounter > _stopAtCount){
+			_state = STATE_POSITION_CONTROL;
+			this->goHome();
+			printf("going Home now\n");
+		}
+		else{
+			float error = (float) _posSetpoint - _pos;
+			float out = arm_pid_f32(this->_ArmPosPid, error);
+
+			if(printEnabled) printf("Loop Counter: %d\tPID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", _controlLoopCounter, out, _Encoder->getPosition(), _posSetpoint, error);
+			_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
+		}
+	}
 	else{ // _state == STATE_IDLE
 		//printf("Encoder ticks: %d\n", _Encoder->getPosition()); // TODO: change this to some default thing or something that does nothing
 	} 
@@ -278,19 +284,20 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWait
 	else{
 		_controlLoopCounter = 0;
 		_state = STATE_COAST_STRIKE;
+		printf("setting to STATE_COAST_STRIKE\n");
 	}
 }
 
 
-void RotaryActuator::dampenString(EventQueue * queue, bool hard, int time_ms){
+void RotaryActuator::dampenString(bool hard, int time_ms){
 	//TODO: implement a hard vs. soft dampening
-	// _stopAtCount = time_ms / _controlInterval_ms;
-	// _controlLoopCounter = 0;
-	_state = STATE_POSITION_CONTROL;
-	// goToString();
+	_stopAtCount = time_ms / _controlInterval_ms;
+	_controlLoopCounter = 0;
+	_state = STATE_DAMPENING;
 	setPosSetpoint(20);
-	queue->call_in(time_ms, this, &RotaryActuator::goHome);
+	// queue->call_in(time_ms, this, &RotaryActuator::goHome);
 	this->printEnabled = true;
+	printf("setting to STATE_DAMPENING, loopCounter should stop at %d\n", _stopAtCount);
 
 }
 
