@@ -230,6 +230,7 @@ void calibrateODrive(){
 		pc.printf("something went wrong and the control mode was not successfully set, current mode is a %d\n", odrive.readControlMode(axis));
 	else
 		pc.printf("control mode set to: %d\n", odrive.readControlMode(axis));
+	wait(1);
 
 	if(TEST){
 		odrive.setPosition(axis, 10000);
@@ -242,6 +243,7 @@ void calibrateODrive(){
 		wait(0.1);
 	}
 	odrive.setPosition(axis, (int) zeroCurrentPose + 5000);
+	printf("setting odrive to %d\n", (int) zeroCurrentPose + 5000);
 
 	// TODO: Add calbration sequence that will find different note values
 }
