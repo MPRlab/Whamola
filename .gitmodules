@@ -7,3 +7,6 @@
 [submodule "lib/OSC-Client"]
 	path = lib/OSC-Client
 	url = git@github.com:MPRlab/OSC-Client.git
+[submodule "lib/pitch-sensing"]
+	path = lib/pitch-sensing
+	url = git@github.com:MPRlab/pitch-sensing.git

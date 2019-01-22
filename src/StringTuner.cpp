@@ -1,6 +1,6 @@
 #include "StringTuner.h"
 
-StringTuner::StringTuner(Serial odrive_serial, int lowestNote, int highestNote){
+	StringTuner::StringTuner(Serial odrive_serial, int lowestNote, int highestNote){
 
 	// Initilialize ODrive
 	odrive_serial.baud(115200); 
@@ -25,6 +25,12 @@ StringTuner::StringTuner(Serial odrive_serial, int lowestNote, int highestNote){
 		_highestNote = highestNote;
 
 
+}
+
+vector<float> StringTuner::updateRegression(){
+	float measuredFreq = FreqCalc();
+	float measuredPose = _odrive->getPositionEstimate(_axis);
+	return updateModel(measuredPose, measuredFreq);
 }
 
 
@@ -59,6 +65,41 @@ void StringTuner::pitchBend(int bendValue){
 void StringTuner::updateODrivePosition(float position){
 	_odrive->setPosition(_axis, position);
 
+}
+
+void StringTuner::attachFreqSenseADC(EventQueue * queue){
+	int period_ms = PERIOD * 1000;
+	queue->call_every(period_ms, &readSample);
+}
+
+
+void StringTuner::calibrateODrive(){
+	int axis = 0;
+
+	printf("Checking ODrive now...\n");
+	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
+
+	_odrive->setControlMode(_axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
+	wait(1); // Hopefully this actually changes to Current control
+	_odrive->setCurrent(_axis, 2);
+	wait(1);
+	_odrive->setCurrent(_axis, 0);
+	float zeroCurrentPose = _odrive->getPositionEstimate(axis);
+
+	// Set position to be zero to be safe
+	_odrive->setPosition(_axis, 0);
+	wait(2);
+	// Now switch back to position control
+	if(!_odrive->setControlMode(_axis, ODriveMbed::CTRL_MODE_POSITION_CONTROL, true))
+		printf("something went wrong and the control mode was not successfully set, current mode is a %d\n", _odrive->readControlMode(_axis));
+	else
+		printf("control mode set to: %d\n", _odrive->readControlMode(_axis));
+	wait(1);
+
+	_odrive->setPosition(_axis, (int) zeroCurrentPose + 5000);
+	printf("setting odrive to %d\n", (int) zeroCurrentPose + 5000);
+
+	// TODO: Add calbration sequence that will find different note values
 }
 
 

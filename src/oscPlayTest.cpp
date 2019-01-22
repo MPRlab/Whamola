@@ -4,6 +4,7 @@
 #include "ODriveMbed.h"
 #include "RotaryActuator.h"
 #include <string>
+#include "StringTuner.h"
 
 #define VERBOSE 1
 #define TEST 0
@@ -28,13 +29,15 @@ DigitalIn userButton(USER_BUTTON);
 Serial odrive_serial(ODRIVE2TX, ODRIVE2RX);
 ODriveMbed odrive(odrive_serial);
 
+// String Tuner constructor
+StringTuner TuningHead(odrive_serial, 21, 38);
 
 // Function Prototypes
 void calibrateODrive();
 void calibrateStrikers();
 
 // Init variables
-int loopTime = 3; // milliseconds
+int loopTime = 5; // milliseconds
 Thread thread(osPriorityHigh);
 EventQueue queue;
 
@@ -69,7 +72,8 @@ int main() {
 	while(!userButton){}
 
 	// Calibrate the ODrive and strikers
-	calibrateODrive();
+	// calibrateODrive();
+	TuningHead.calibrateODrive();
 	calibrateStrikers();
 
 	char name[] = "Whamola";
@@ -141,10 +145,14 @@ int main() {
 						leftStrikerTurn = !leftStrikerTurn;
 
 						led2 = 1;
+						wait(0.25);
+						pc.puts("read ACF here\n");
+						std::vector<float> result = TuningHead.updateRegression();
+						printf("new slope: %f\tnew intercept: %f\n", result[0], result[1]);
 					}
 					else{ // Dampen the string
 						// Dampener.dampenString(&queue, true, 500); // Damps the string
-						pc.puts("should dampen string here\n");
+						pc.puts("should dampen string here\r\n");
 						led2 = 0;
 
 					}
@@ -208,12 +216,14 @@ void calibrateStrikers(){
 	}
 }
 
+/*
+
 // TODO: put this in a proxy class that interfaces with the ODriveMbed library directly
 void calibrateODrive(){
 	int axis = 0;
 
 	pc.puts("Checking ODrive now...\n");
-	while(odrive.readState(axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
+	while(odrive.readState(axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){} // wait until the state is closed loop control
 
 	odrive.setControlMode(axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
 	wait(1); // Hopefully this actually changes to Current control
@@ -247,3 +257,5 @@ void calibrateODrive(){
 
 	// TODO: Add calbration sequence that will find different note values
 }
+
+*/
