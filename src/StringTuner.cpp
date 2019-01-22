@@ -32,7 +32,7 @@
 vector<float> StringTuner::updateRegression(){
 	float measuredFreq = FreqCalc();
 	float measuredPose = _odrive->getPositionEstimate(_axis);
-	return updateModel(measuredPose, measuredFreq);
+	return updateModel(measuredPose, pow(measuredFreq, 2));
 }
 
 
@@ -79,6 +79,7 @@ void StringTuner::calibrateODrive(){
 	int axis = 0;
 
 	printf("Checking ODrive now...\n");
+	wait(1);
 	printf("ODrive is in state: %d\n", _odrive->readState(_axis));
 
 	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
@@ -100,10 +101,32 @@ void StringTuner::calibrateODrive(){
 		printf("control mode set to: %d\n", _odrive->readControlMode(_axis));
 	wait(1);
 
-	_odrive->setPosition(_axis, (int) zeroCurrentPose + 5000);
+	_odrive->setPosition(_axis, (int) zeroCurrentPose - 500);
 	printf("setting odrive to %d\n", (int) zeroCurrentPose + 5000);
-
+	_currentNoBendPose = zeroCurrentPose - 500.0f;
 	// TODO: Add calbration sequence that will find different note values
+}
+
+
+void StringTuner::autoStringCalibration(RotaryActuator * Striker){
+	int pose;
+	float measuredFreq = 0.0f;
+	float measuredPose;
+	printf("starting for loop now\n");
+	for (pose = _currentNoBendPose; pose += 500; measuredFreq < _idealNotesMap[_highestNote]){
+		updateODrivePosition(pose);
+		wait_ms(200);
+		Striker->coastStrikeMIDI(60);
+		printf("Just struck string\n");
+		wait_ms(500);
+		printf("calculating frequency\n");
+		// measuredFreq = FreqCalc();
+		measuredFreq += 10.0f; // substitute this for now
+		printf("Reading Lever Position\n");
+	 	_currentNoBendPose = _odrive->getPositionEstimate(_axis);
+	 	updateModel(_currentNoBendPose, pow(measuredFreq, 2));
+	 	wait_ms(500);
+	}
 }
 
 

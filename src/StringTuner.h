@@ -6,6 +6,7 @@
 #include "LinearRegression.h"
 #include "ODriveMbed.h"
 #include "yin.h"
+#include "RotaryActuator.h"
 
 // TODO: include and add the frequency detecting 
 using namespace std;
@@ -35,6 +36,7 @@ public:
 	void pitchBend(int bendValue); // value from 0-127 where 63 is no bend, 0 is the semi-tone below, and 127 the semi-tone above
 	void attachFreqSenseADC(EventQueue * queue);
 	void calibrateODrive();
+	void autoStringCalibration(RotaryActuator * Striker);
 
 
 private:

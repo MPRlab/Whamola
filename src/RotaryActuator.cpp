@@ -238,13 +238,13 @@ void RotaryActuator::controlLoop(){
 				// _Motor->setSpeedBrake(0.0f);
 
 				_state = STATE_POSITION_CONTROL;
-				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				// printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
 			_Motor->setSpeedCoast(_motorPower);
-			printf("Encoder ticks: %f\n", _Encoder->getPosition());
+			// printf("Encoder ticks: %f\n", _Encoder->getPosition());
 			if(_Encoder->getPosition() > - abs(_releaseDistance)){
 				_letGo = true;
 				_controlLoopCounter = 0;
@@ -262,7 +262,14 @@ void RotaryActuator::controlLoop(){
 	// printf("Execution time per loop: %f\n",t.read());
 }
 
-// TODO: make this function non-blocking, i.e. make the control loop follow a trajectory
+
+void RotaryActuator::coastStrikeMIDI(int midiVel){
+	// pitch 0-127
+	float power = ((0.35f/127.0f) * midiVel) + 0.65f;
+	int releasePoint = ((345/127) * midiVel) + 80;
+	this->coastStrike(power, releasePoint, 30);
+}
+
 void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike_ms){
 
 	_letGo = false;

@@ -62,7 +62,7 @@ public:
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
 	void coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike); // release distance in ticks for now
 
-
+	void coastStrikeMIDI(int midiVel);
 	void dampenString(EventQueue * queue, bool hard, int time_ms); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	

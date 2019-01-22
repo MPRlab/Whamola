@@ -7,7 +7,7 @@
 #include "StringTuner.h"
 
 #define VERBOSE 1
-#define TEST 0
+#define TEST 1
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
@@ -43,14 +43,14 @@ EventQueue queue;
 // Right striker Actuator Init
 RotaryActuator StrikerR(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false), 
-						loopTime, 0.001f, 0.0f, 0.0001f);
+						loopTime, 0.002f, 0.0f, 0.0001f);
 // SingleMC33926MotorController * rightStriker =  new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false);
 
 
 // Left striker Actuator Init
 RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D7, D13, A1, PE_14, PB_11, false), 
-						loopTime, 0.001f, 0.0f, 0.0001f);
+						loopTime, 0.002f, 0.0f, 0.0001f);
 
 
 // Dampener Actuator Init
@@ -74,6 +74,9 @@ int main() {
 	// calibrateODrive();
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
+
+	TuningHead.autoStringCalibration(&StrikerR);
+
 
 	char name[] = "Whamola";
 	instrumentName = name;
@@ -133,21 +136,17 @@ int main() {
 					// TODO: command ODrive position to move to a given note
 
 					if(velocity !=0){ // Strike the String
-						float motorPower = (float) velocity/100.0;
 
-						static bool leftStrikerTurn = false;
-						if(leftStrikerTurn)
-							StrikerL.coastStrike(motorPower, 400, 500);
-						else
-							StrikerR.coastStrike(motorPower, 400, 500);
-
-						leftStrikerTurn = !leftStrikerTurn;
-
+						// TuningHead.playMidiNote(pitch);
+						StrikerR.coastStrikeMIDI(velocity);
 						led2 = 1;
+
+						/*
 						wait(0.25);
 						pc.puts("read ACF here\n");
 						std::vector<float> result = TuningHead.updateRegression();
 						printf("new slope: %f\tnew intercept: %f\n", result[0], result[1]);
+						*/
 					}
 					else{ // Dampen the string
 						// Dampener.dampenString(&queue, true, 500); // Damps the string
@@ -196,65 +195,28 @@ void calibrateStrikers(){
 	StrikerR.calibrate(700);
 	pc.puts("Done calibrating right striker now\n");
 	
-	pc.puts("calibrating left striker now...\n");
-	StrikerL.calibrate(700);
-	pc.puts("Done calibrating left striker\n");
+	// pc.puts("calibrating left striker now...\n");
+	// StrikerL.calibrate(700);
+	// pc.puts("Done calibrating left striker\n");
 
 	// pc.puts("calibrating dampener now...\n");
 	// Dampener.calibrate(400);
 	// pc.puts("Done calibrating dampener\n");
 
 	if(TEST){
+		// wait(3);
+		// StrikerL.coastStrike(0.75, 350, 50);
 		wait(3);
-		StrikerL.coastStrike(0.75, 350, 200);
+		StrikerR.coastStrikeMIDI(127);
 		wait(3);
-		StrikerR.coastStrike(0.75, 350, 200);
+		StrikerR.coastStrikeMIDI(95);
 		wait(3);
+		StrikerR.coastStrikeMIDI(1);
+		wait(3);
+
+
+
 		// Dampener.dampenString(&queue, true, 500);
 		// wait(3);
 	}
 }
-
-/*
-
-// TODO: put this in a proxy class that interfaces with the ODriveMbed library directly
-void calibrateODrive(){
-	int axis = 0;
-
-	pc.puts("Checking ODrive now...\n");
-	while(odrive.readState(axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){} // wait until the state is closed loop control
-
-	odrive.setControlMode(axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
-	wait(1); // Hopefully this actually changes to Current control
-	odrive.setCurrent(axis, 2);
-	wait(1);
-	odrive.setCurrent(axis, 0);
-	float zeroCurrentPose = odrive.getPositionEstimate(axis);
-
-	// Set position to be zero to be safe
-	odrive.setPosition(axis, 0);
-	wait(2);
-	// Now switch back to position control
-	if(!odrive.setControlMode(axis, ODriveMbed::CTRL_MODE_POSITION_CONTROL, true))
-		pc.printf("something went wrong and the control mode was not successfully set, current mode is a %d\n", odrive.readControlMode(axis));
-	else
-		pc.printf("control mode set to: %d\n", odrive.readControlMode(axis));
-	wait(1);
-
-	if(TEST){
-		odrive.setPosition(axis, 10000);
-		wait(3);
-		odrive.setPosition(axis, 0);
-		wait(0.1);
-		odrive.setPosition(axis, 10000);
-		wait(0.1);
-		odrive.setPosition(axis, 0);
-		wait(0.1);
-	}
-	odrive.setPosition(axis, (int) zeroCurrentPose + 5000);
-	printf("setting odrive to %d\n", (int) zeroCurrentPose + 5000);
-
-	// TODO: Add calbration sequence that will find different note values
-}
-
-*/
