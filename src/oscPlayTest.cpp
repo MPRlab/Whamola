@@ -26,14 +26,13 @@ Serial pc(USBTX, USBRX);
 DigitalIn userButton(USER_BUTTON);
 
 // ODrive constructor
-Serial odrive_serial(ODRIVE2TX, ODRIVE2RX);
-ODriveMbed odrive(odrive_serial);
+Serial * odrive_serial = new Serial(ODRIVE2TX, ODRIVE2RX);
+// ODriveMbed odrive(odrive_serial);
 
 // String Tuner constructor
 StringTuner TuningHead(odrive_serial, 21, 38);
 
 // Function Prototypes
-void calibrateODrive();
 void calibrateStrikers();
 
 // Init variables
@@ -66,7 +65,7 @@ RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
  */
 int main() {
 	pc.baud(115200);
-	odrive_serial.baud(115200);
+	// odrive_serial.baud(115200);
 	//set the instrument name
 
 	while(!userButton){}

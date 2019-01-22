@@ -1,10 +1,12 @@
 #include "StringTuner.h"
 
-	StringTuner::StringTuner(Serial odrive_serial, int lowestNote, int highestNote){
+	StringTuner::StringTuner(Serial * odrive_serial, int lowestNote, int highestNote){
 
 	// Initilialize ODrive
-	odrive_serial.baud(115200); 
-	_odrive = new ODriveMbed(odrive_serial);
+	printf("setting baud rate\r\n");
+	odrive_serial->baud(115200); 
+	printf("Creating ODrive object\r\n");
+	_odrive = new ODriveMbed(*odrive_serial);
 	_axis = 0;
 
 
@@ -77,6 +79,8 @@ void StringTuner::calibrateODrive(){
 	int axis = 0;
 
 	printf("Checking ODrive now...\n");
+	printf("ODrive is in state: %d\n", _odrive->readState(_axis));
+
 	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
 
 	_odrive->setControlMode(_axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);

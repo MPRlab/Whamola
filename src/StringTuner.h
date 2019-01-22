@@ -13,7 +13,7 @@ using namespace std;
 class StringTuner : public LinearRegression{
 public:
 
-	StringTuner(Serial odrive_serial, int lowestNote, int highestNote); // specify the ideal notes hashmap in here
+	StringTuner(Serial * odrive_serial, int lowestNote, int highestNote); // specify the ideal notes hashmap in here
 
 	ODriveMbed * _odrive;
 
