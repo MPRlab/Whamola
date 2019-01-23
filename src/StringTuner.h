@@ -37,7 +37,7 @@ public:
 	void attachFreqSenseADC(EventQueue * queue);
 	void calibrateODrive();
 	void autoStringCalibration(RotaryActuator * Striker);
-	void updateODrivePositionPublic(float position);
+	void updateODrivePositionUser(float position);
 
 
 private:
@@ -45,7 +45,7 @@ private:
 	// Private members
 	int _lowestNote, _highestNote, _currentNote;
 	// Odrive stuff
-	float _currentNoBendPose, _lowerSemitonePose, _uppperSemitonePose;
+	float _currentNoBendPose, _lowerSemitonePose, _uppperSemitonePose, _zeroCurrentPose;
 	int _axis;
 
 	// Private Methods

@@ -266,7 +266,7 @@ void RotaryActuator::coastStrikePowerTest(float pwmDuty, int timeWaitAfterStrike
 	if(pwmDuty < 0.65){
 		pwmDuty = 0.65;
 	}
-	int dist = ((pwmDuty-0.65)/.35)*345 + 80;
+	int dist = ((pwmDuty-0.65)/.35)*320 + 80;
 	this->coastStrike(pwmDuty, dist, 20);
 }
 

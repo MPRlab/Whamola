@@ -69,9 +69,9 @@ void StringTuner::updateODrivePosition(float position){
 
 }
 
-void StringTuner::updateODrivePositionPublic(float position){
+void StringTuner::updateODrivePositionUser(float position){
 	_currentNoBendPose = position;
-	_odrive->setPosition(_axis, position);
+	_odrive->setPosition(_axis, _zeroCurrentPose + position);
 
 }
 
@@ -93,7 +93,7 @@ void StringTuner::calibrateODrive(){
 	_odrive->setCurrent(_axis, 2);
 	wait(1);
 	_odrive->setCurrent(_axis, 0);
-	float zeroCurrentPose = _odrive->getPositionEstimate(axis);
+	_zeroCurrentPose = _odrive->getPositionEstimate(axis);
 
 	// Set position to be zero to be safe
 	_odrive->setPosition(_axis, 0);
@@ -105,9 +105,9 @@ void StringTuner::calibrateODrive(){
 		printf("control mode set to: %d\n", _odrive->readControlMode(_axis));
 	wait(1);
 
-	_odrive->setPosition(_axis, (int) zeroCurrentPose - 500);
-	printf("setting odrive to %d\n", (int) zeroCurrentPose + 5000);
-	_currentNoBendPose = zeroCurrentPose - 500.0f;
+	_odrive->setPosition(_axis, (int) _zeroCurrentPose - 500);
+	printf("setting odrive to %d\n", (int) _zeroCurrentPose + 5000);
+	_currentNoBendPose = _zeroCurrentPose - 500.0f;
 	// TODO: Add calbration sequence that will find different note values
 }
 

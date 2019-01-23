@@ -164,7 +164,7 @@ int main() {
 				if (strcmp(msg->format, ",i") == 0) {
 					float pwmDuty = (float) osc.getIntAtIndex(msg, 0) / 100.0f;
 					pc.printf("drTest with value: %f\n", pwmDuty);
-					StrikerR.coastStrikePowerTest(pwmDuty, 30);
+					StrikerR.coastStrikePowerTest(pwmDuty, 50);
 				}
 
 			}
@@ -174,7 +174,7 @@ int main() {
 					int userPose = osc.getIntAtIndex(msg, 0);
 					pc.printf("setTunerPos message for encoder value: %d\n", userPose);
 					float floatPose = (float)userPose;
-					TuningHead.updateODrivePositionPublic(floatPose);
+					TuningHead.updateODrivePositionUser(floatPose);
 				}
 			}
 
