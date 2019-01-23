@@ -37,6 +37,7 @@ public:
 	void attachFreqSenseADC(EventQueue * queue);
 	void calibrateODrive();
 	void autoStringCalibration(RotaryActuator * Striker);
+	void updateODrivePositionPublic(float position);
 
 
 private:

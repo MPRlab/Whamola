@@ -162,12 +162,22 @@ int main() {
 			else if(strcmp(messageType, "drTest") == 0){
 
 				if (strcmp(msg->format, ",i") == 0) {
-					float pwmDuty = osc.getIntAtIndex(msg, 0) / 100.0f;
+					float pwmDuty = (float) osc.getIntAtIndex(msg, 0) / 100.0f;
 					pc.printf("drTest with value: %f\n", pwmDuty);
 					StrikerR.coastStrikePowerTest(pwmDuty, 30);
 				}
 
 			}
+			else if(strcmp(messageType, "setTunerPos") == 0){
+				if(strcmp(msg->format, ",i") == 0){
+					pc.puts("the message is setTunerPos and the format is correct\n");
+					int userPose = osc.getIntAtIndex(msg, 0);
+					pc.printf("setTunerPos message for encoder value: %d\n", userPose);
+					float floatPose = (float)userPose;
+					TuningHead.updateODrivePositionPublic(floatPose);
+				}
+			}
+
 		}
 		else {
 			//Not intended for this instrument

@@ -69,6 +69,13 @@ void StringTuner::updateODrivePosition(float position){
 
 }
 
+void StringTuner::updateODrivePositionPublic(float position){
+	_currentNoBendPose = position;
+	_odrive->setPosition(_axis, position);
+
+}
+
+
 void StringTuner::attachFreqSenseADC(EventQueue * queue){
 	int period_ms = PERIOD * 1000;
 	queue->call_every(period_ms, &readSample);
@@ -79,9 +86,6 @@ void StringTuner::calibrateODrive(){
 	int axis = 0;
 
 	printf("Checking ODrive now...\n");
-	wait(1);
-	printf("ODrive is in state: %d\n", _odrive->readState(_axis));
-
 	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
 
 	_odrive->setControlMode(_axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
