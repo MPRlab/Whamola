@@ -7,7 +7,7 @@
 #include "StringTuner.h"
 
 #define VERBOSE 1
-#define TEST 1
+#define TEST 0
 
 #define ODRIVE2TX D1
 #define ODRIVE2RX D0
@@ -75,7 +75,7 @@ int main() {
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
 
-	TuningHead.autoStringCalibration(&StrikerR);
+	// TuningHead.autoStringCalibration(&StrikerR);
 
 
 	char name[] = "Whamola";
@@ -159,11 +159,13 @@ int main() {
 				}
 			}
 			// Turn off all notes
-			else if(strcmp(messageType, "allNotesOff") == 0) {
+			else if(strcmp(messageType, "drTest") == 0){
 
-				// Dampener.dampenString(&queue, true, 500); // Damps the string for 500 ms
-
-				//TODO: All notes off
+				if (strcmp(msg->format, ",i") == 0) {
+					float pwmDuty = osc.getIntAtIndex(msg, 0) / 100.0f;
+					pc.printf("drTest with value: %f\n", pwmDuty);
+					StrikerR.coastStrikePowerTest(pwmDuty, 30);
+				}
 
 			}
 		}
@@ -181,7 +183,6 @@ void calibrateStrikers(){
 
 	// Dampener.setCurrentOffsetThreshold(0.005f);
 
-    // while(!stopButton);
 
 	// // Start the event queue's dispatch thread
 	thread.start(callback(&queue, &EventQueue::dispatch_forever));

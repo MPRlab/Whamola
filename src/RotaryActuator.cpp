@@ -262,6 +262,13 @@ void RotaryActuator::controlLoop(){
 	// printf("Execution time per loop: %f\n",t.read());
 }
 
+void RotaryActuator::coastStrikePowerTest(float pwmDuty, int timeWaitAfterStrike_ms){
+	if(pwmDuty < 0.65){
+		pwmDuty = 0.65;
+	}
+	int dist = ((pwmDuty-0.65)/.35)*345 + 80;
+	this->coastStrike(pwmDuty, dist, 20);
+}
 
 void RotaryActuator::coastStrikeMIDI(int midiVel){
 	// pitch 0-127

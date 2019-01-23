@@ -61,8 +61,9 @@ public:
 	// sends motor coast-driving at a duty cycle and releases at a certain distance off string
 	// TODO: have it take in a linear velocity and use linear distance instead of encoder ticks
 	void coastStrike(float encVel, int releaseDistance, int timeWaitAfterStrike); // release distance in ticks for now
-
+	void coastStrikePowerTest(float pwmDuty, int timeWaitAfterStrike_ms);
 	void coastStrikeMIDI(int midiVel);
+
 	void dampenString(EventQueue * queue, bool hard, int time_ms); // TODO: dampen string hard or soft by controlling for current 
 	void controlLoop(); // runs upon ticker firing AFTER actuator is calibrated
 	
