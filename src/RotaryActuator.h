@@ -38,7 +38,7 @@ public:
 	~RotaryActuator();
 
 	// Public Methods
-	void calibrate(int homePosDist); // zeroes out the encoder at the string and moves to a given home position off of the string 
+	void calibrate(int homePosDist, bool directionCCW); // zeroes out the encoder at the string and moves to a given home position off of the string 
 
 	// Position Control state methods
 	void setPosSetpoint(int encoderSetpoint); 
@@ -73,12 +73,10 @@ public:
 private:
 
 	// Private methods
-	float clampToMotorVal(float output); // used internally to condition PID output
-
 
 	// Private attributes
 	Ticker _tick;
-	bool _isCalibrated = false;
+	bool _isCalibrated = false, _directionCCW = false;
 	int _posSetpoint;
 	float _pos; // *** Might need to change this to a float
 	float _velSetpoint;

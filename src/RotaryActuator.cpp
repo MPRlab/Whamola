@@ -89,20 +89,29 @@ RotaryActuator::~RotaryActuator(){
 }
 
 
-void RotaryActuator::calibrate(int homePosDist){
+void RotaryActuator::calibrate(int homePosDist, bool directionCCW){
 	float amps;
 	float avgCurrent = 0.0f;
 	float currentSum = 0.0f;		
 	int ticks = 0;
 	int currentCount = 0;
 
+
+	_directionCCW = directionCCW;
 	_Motor->enable();
 	Timer t;
 
 	// Start driving the motor away from the string
-	_Motor->setSpeedBrake(-0.15f); 
-	wait(1);
-	_Motor->setSpeedBrake(0.2f); 
+	if (!_directionCCW){
+		_Motor->setSpeedBrake(-0.15f); 
+		wait(1);
+		_Motor->setSpeedBrake(0.2f); 
+	}
+	else{
+		_Motor->setSpeedBrake(0.15f); 
+		wait(1);
+		_Motor->setSpeedBrake(-0.2f); 		
+	}
 	t.start();
 
 	// Take in some measurements as a baseline
@@ -144,10 +153,16 @@ void RotaryActuator::calibrate(int homePosDist){
 
 
 	// sets home position to be slightly above where the string is
-	setHomePos(_Encoder->getPosition() - homePosDist);
+	if(!_directionCCW){
+		setHomePos(_Encoder->getPosition() - homePosDist);
 
-	setPosSetpoint(_Encoder->getPosition() - homePosDist);
-	
+		setPosSetpoint(_Encoder->getPosition() - homePosDist);
+	}
+	else{
+		setHomePos(_Encoder->getPosition() + homePosDist);
+
+		setPosSetpoint(_Encoder->getPosition() + homePosDist);		
+	}
 	_state = STATE_POSITION_CONTROL;
 	printf("encoder reading: %f, home position at %d changing state to position control...\n", _Encoder->getPosition(), _homePos);
 }
@@ -184,15 +199,6 @@ void RotaryActuator::resetEncoder(){
 }
 
 
-float RotaryActuator::clampToMotorVal(float output){
-	if(output > 1.0)
-		output = 1.0;
-	else if(output < -1.0)
-		output = -1.0;
-	return output;
-}
-
-
 // This method is called periodically on the ticker object
 void RotaryActuator::controlLoop(){
 	// Timer t;
@@ -211,11 +217,6 @@ void RotaryActuator::controlLoop(){
 
 		// float out = error * 0.005f;
 
-		// if(!_Motor->isFlipped())
-		// 	out = - clampToMotorVal(out); 
-		// else
-		// 	out = clampToMotorVal(out); 
-
 		// printf("PID output: %f\tPosition: %f\tSetpoint: %d\tError: %f\n", out, _Encoder->getPosition(), _posSetpoint, error);
 		_Motor->setSpeedBrake(out); // TODO: see about changing this to a coast drive if it needs it
 
@@ -223,7 +224,6 @@ void RotaryActuator::controlLoop(){
 	else if(_state == STATE_VELOCITY_CONTROL){
 		float vel = _pos - _lastPos;
 		float out = arm_pid_f32(this->_ArmVelPid, _velSetpoint - vel);
-		out = clampToMotorVal(out);
 		_Motor->setSpeedCoast(out); // This uses coast for the bounceback effect on the string for gestures
 
 	}
@@ -231,6 +231,7 @@ void RotaryActuator::controlLoop(){
 		// TODO: add current control mode
 	}
 	else if(_state == STATE_COAST_STRIKE){
+
 		if(_letGo){
 			_Motor->setSpeedCoast(0.0f);
 			// _Motor->disable();
@@ -238,17 +239,29 @@ void RotaryActuator::controlLoop(){
 				// _Motor->setSpeedBrake(0.0f);
 
 				_state = STATE_POSITION_CONTROL;
-				// printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
+				printf("Encoder now at %d, switching to STATE_POSITION_CONTROL\n", _pos);
 
 			}
 		}
 		else{
-			_Motor->setSpeedCoast(_motorPower);
 			// printf("Encoder ticks: %f\n", _Encoder->getPosition());
-			if(_Encoder->getPosition() > - abs(_releaseDistance)){
-				_letGo = true;
-				_controlLoopCounter = 0;
+			if(!_directionCCW){
+				_Motor->setSpeedCoast(_motorPower);
+
+				if(_Encoder->getPosition() > - abs(_releaseDistance)){
+					_letGo = true;
+					_controlLoopCounter = 0;
+				}
 			}
+			else{
+				_Motor->setSpeedCoast(-_motorPower);
+
+				if(_Encoder->getPosition() < abs(_releaseDistance)){
+					_letGo = true;
+					_controlLoopCounter = 0;
+				}
+			}
+
 		}
 		// printf("Motor current: %f\tEncoder: %f\n", current, _Encoder->getPosition());
 	}
@@ -283,7 +296,10 @@ void RotaryActuator::coastStrike(float encVel, int releaseDistance, int timeWait
 	_motorPower = encVel; // solution for now
 	_releaseDistance = releaseDistance;
 	_stopAtCount = timeWaitAfterStrike_ms / _controlInterval_ms;
-	if(_Encoder->getPosition() > - abs(_releaseDistance)){
+	if(!_directionCCW && _Encoder->getPosition() > - abs(_releaseDistance)){
+		printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
+	}
+	else if(_directionCCW && _Encoder->getPosition() < abs(_releaseDistance)){
 		printf("release point %d is currently greater than striker location, will not carry out coastStrike\n", _stopAtCount);
 	}
 	else{
