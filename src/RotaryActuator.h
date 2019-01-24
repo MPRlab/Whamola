@@ -38,7 +38,7 @@ public:
 	~RotaryActuator();
 
 	// Public Methods
-	void calibrate(int homePosDist, bool directionCCW); // zeroes out the encoder at the string and moves to a given home position off of the string 
+	void calibrate(int homePosDist, bool directionCCW, float threshCurrent); // zeroes out the encoder at the string and moves to a given home position off of the string 
 
 	// Position Control state methods
 	void setPosSetpoint(int encoderSetpoint); 

@@ -89,7 +89,7 @@ RotaryActuator::~RotaryActuator(){
 }
 
 
-void RotaryActuator::calibrate(int homePosDist, bool directionCCW){
+void RotaryActuator::calibrate(int homePosDist, bool directionCCW, float threshCurrent){
 	float amps;
 	float avgCurrent = 0.0f;
 	float currentSum = 0.0f;		
@@ -104,12 +104,12 @@ void RotaryActuator::calibrate(int homePosDist, bool directionCCW){
 	// Start driving the motor away from the string
 	if (!_directionCCW){
 		_Motor->setSpeedBrake(-0.15f); 
-		wait(1);
+		wait(0.5);
 		_Motor->setSpeedBrake(0.2f); 
 	}
 	else{
 		_Motor->setSpeedBrake(0.15f); 
-		wait(1);
+		wait(0.5);
 		_Motor->setSpeedBrake(-0.2f); 		
 	}
 	t.start();
@@ -123,7 +123,7 @@ void RotaryActuator::calibrate(int homePosDist, bool directionCCW){
 
 
 	avgCurrent = currentSum / currentCount;
-	float currentThreshold = avgCurrent + 0.025;
+	float currentThreshold = avgCurrent + threshCurrent;
 	printf("current to detect zero point on the string: %f A\n", currentThreshold);
 	currentSum = 0.0;
 	currentCount = 0;
@@ -244,7 +244,7 @@ void RotaryActuator::controlLoop(){
 			}
 		}
 		else{
-			// printf("Encoder ticks: %f\n", _Encoder->getPosition());
+			printf("Encoder ticks: %f\n", _Encoder->getPosition());
 			if(!_directionCCW){
 				_Motor->setSpeedCoast(_motorPower);
 
@@ -285,8 +285,8 @@ void RotaryActuator::coastStrikePowerTest(float pwmDuty, int timeWaitAfterStrike
 
 void RotaryActuator::coastStrikeMIDI(int midiVel){
 	// pitch 0-127
-	float power = ((0.35f/127.0f) * midiVel) + 0.65f;
-	int releasePoint = ((345/127) * midiVel) + 80;
+	float power = ((0.35f/128.0f) * midiVel) + 0.65f;
+	int releasePoint = ((320/128) * midiVel) + 80;
 	this->coastStrike(power, releasePoint, 30);
 }
 
@@ -313,9 +313,10 @@ void RotaryActuator::dampenString(EventQueue * queue, bool hard, int time_ms){
 	//TODO: implement a hard vs. soft dampening
 	// _stopAtCount = time_ms / _controlInterval_ms;
 	// _controlLoopCounter = 0;
+	printf("Damping now\n");
 	_state = STATE_POSITION_CONTROL;
-	// goToString();
-	setPosSetpoint(20);
+	goToString();
+	// setPosSetpoint(20);
 	queue->call_in(time_ms, this, &RotaryActuator::goHome);
 
 }

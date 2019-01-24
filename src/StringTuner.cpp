@@ -113,11 +113,11 @@ void StringTuner::calibrateODrive(){
 
 
 void StringTuner::autoStringCalibration(RotaryActuator * Striker){
-	int pose;
+	int pose = _zeroCurrentPose - 500.0f;
 	float measuredFreq = 0.0f;
 	float measuredPose;
 	printf("starting for loop now\n");
-	for (pose = _currentNoBendPose; pose += 500; measuredFreq < _idealNotesMap[_highestNote]){
+	while (measuredFreq < _idealNotesMap[_highestNote]){
 		updateODrivePosition(pose);
 		wait_ms(200);
 		Striker->coastStrikeMIDI(60);
@@ -130,6 +130,7 @@ void StringTuner::autoStringCalibration(RotaryActuator * Striker){
 	 	_currentNoBendPose = _odrive->getPositionEstimate(_axis);
 	 	updateModel(_currentNoBendPose, pow(measuredFreq, 2));
 	 	wait_ms(500);
+	 	pose += 500.0f;
 	}
 }
 
