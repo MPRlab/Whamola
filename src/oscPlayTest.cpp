@@ -19,6 +19,8 @@ DigitalOut led1(LED1);	//Green running LED
 DigitalOut led2(LED2);	//Blue controller LED
 DigitalOut led3(LED3);	//Red ethernet LED
 
+DigitalOut strikeLED(D6); 
+
 // pc UART comms constructor
 Serial pc(USBTX, USBRX);
 
@@ -88,6 +90,10 @@ int main() {
 	led2 = 2;
 	led3 = 3;
 
+	strikeLED = 1;
+	wait(1);
+	strikeLED = 0;
+
 	//Setup ethernet interface
 	EthernetInterface eth;
 	eth.connect();
@@ -141,7 +147,8 @@ int main() {
 
 						// TuningHead.playMidiNote(pitch);
 						led2 = 1;
-						// if(flag){	
+						// if(flag){
+							strikeLED = 1;	
 							StrikerR.coastStrikeMIDI(velocity);
 							printf("striker right\n");
 
@@ -161,6 +168,7 @@ int main() {
 						*/
 					}
 					else{ // Dampen the string
+						strikeLED = 0;
 						Dampener.dampenString(&queue, true, 200); // Damps the string
 						pc.puts("should dampen string here\r\n");
 						led2 = 0;
