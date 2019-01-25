@@ -50,7 +50,7 @@ RotaryActuator StrikerR(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 // Dampener Actuator Init
 RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D7, D13, A1, PE_14, PB_11, false), 
-						loopTime, 0.007f, 0.0f, 0.0001f);
+						loopTime, 0.002f, 0.0f, 0.0001f);
 
 
 // Left Striker Actuator Init
@@ -131,7 +131,7 @@ int main() {
 					uint32_t pitch 	  = osc.getIntAtIndex(msg, 0);
 					uint32_t velocity = osc.getIntAtIndex(msg, 1);
 
-					bool flag = false;
+					static bool flag = false;
 
 					printf("Pitch %d, velocity %d\r\n",pitch,velocity);
 
