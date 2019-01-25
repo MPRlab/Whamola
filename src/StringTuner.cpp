@@ -77,7 +77,7 @@ void StringTuner::updateODrivePositionUser(float position){
 
 
 void StringTuner::attachFreqSenseADC(EventQueue * queue){
-	int period_ms = PERIOD * 1000;
+	int period_ms = PERIOD_ACF	 * 1000;
 	queue->call_every(period_ms, &readSample);
 }
 
@@ -86,7 +86,9 @@ void StringTuner::calibrateODrive(){
 	int axis = 0;
 
 	printf("Checking ODrive now...\n");
-	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){/* wait until the state is closed loop control */}
+	while(_odrive->readState(_axis) != ODriveMbed::AXIS_STATE_CLOSED_LOOP_CONTROL){
+		wait(0.1);
+	}
 
 	_odrive->setControlMode(_axis, ODriveMbed::CTRL_MODE_CURRENT_CONTROL, false);
 	wait(1); // Hopefully this actually changes to Current control
@@ -124,7 +126,7 @@ void StringTuner::autoStringCalibration(RotaryActuator * Striker){
 		printf("Just struck string\n");
 		wait_ms(500);
 		printf("calculating frequency\n");
-		// measuredFreq = FreqCalc();
+		printf("ACF frequency = %f\n",FreqCalc());
 		measuredFreq += 10.0f; // substitute this for now
 		printf("Reading Lever Position\n");
 	 	_currentNoBendPose = _odrive->getPositionEstimate(_axis);

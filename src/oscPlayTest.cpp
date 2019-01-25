@@ -56,9 +56,9 @@ RotaryActuator Dampener(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 
 
 // Left Striker Actuator Init
-RotaryActuator StrikerL(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
-						new SingleMC33926MotorController(D11, D15, A0, D3, D5, false), 
-						loopTime, 0.001f, 0.0f, 0.00012f);
+// RotaryActuator StrikerL(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+// 						new SingleMC33926MotorController(D11, D15, A0, D3, D5, false), 
+// 						loopTime, 0.001f, 0.0f, 0.00012f);
 
 
 
@@ -77,7 +77,7 @@ int main() {
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
 
-	// TuningHead.autoStringCalibration(&StrikerR);
+	TuningHead.autoStringCalibration(&StrikerR);
 
 
 	char name[] = "Whamola";
@@ -219,24 +219,24 @@ void calibrateStrikers(){
 
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
 	queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
-	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
+	// queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
 	pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
 	StrikerR.calibrate(700, false, 0.025);
 	pc.puts("Done calibrating right striker now\n");
 	
-	pc.puts("calibrating left striker now...\n");
-	StrikerL.calibrate(700, true, 0.025);
-	pc.puts("Done calibrating left striker\n");
+	// pc.puts("calibrating left striker now...\n");
+	// StrikerL.calibrate(700, true, 0.025);
+	// pc.puts("Done calibrating left striker\n");
 
 	pc.puts("calibrating dampener now...\n");
 	Dampener.calibrate(40, false, 0.01);
 	pc.puts("Done calibrating dampener\n");
 
 	if(TEST){
-		wait(3);
-		StrikerL.coastStrike(0.75, 350, 50);
+		// wait(3);
+		// StrikerL.coastStrike(0.75, 350, 50);
 		wait(3);
 		StrikerR.coastStrikeMIDI(127);
 		wait(3);
