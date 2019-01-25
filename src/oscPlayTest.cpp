@@ -48,15 +48,15 @@ RotaryActuator StrikerR(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QE
 
 
 // Dampener Actuator Init
-RotaryActuator Dampener(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+RotaryActuator StrikerL(new QEIx4(PD_6, PD_5, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D7, D13, A1, PE_14, PB_11, false), 
 						loopTime, 0.007f, 0.0f, 0.0001f);
 
 
 // Left Striker Actuator Init
-RotaryActuator StrikerL(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
-						new SingleMC33926MotorController(D11, D15, A0, D3, D5, false), 
-						loopTime, 0.001f, 0.0f, 0.00012f);
+// RotaryActuator StrikerL(new QEIx4(PD_1, PD_0, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+// 						new SingleMC33926MotorController(D11, D15, A0, D3, D5, false), 
+// 						loopTime, 0.001f, 0.0f, 0.00012f);
 
 
 
@@ -141,17 +141,17 @@ int main() {
 
 						// TuningHead.playMidiNote(pitch);
 						led2 = 1;
-						// if(flag){	
+						if(flag){	
 							StrikerR.coastStrikeMIDI(velocity);
 							printf("striker right\n");
 
-						// }
-						// else{
-						// 	StrikerL.coastStrikeMIDI(velocity);
-						// 	printf("striker left\n");
+						}
+						else{
+							StrikerL.coastStrikeMIDI(velocity);
+							printf("striker left\n");
 
-						// }
-						// flag = !flag;
+						}
+						flag = !flag;
 
 						/*
 						wait(0.25);
@@ -161,7 +161,7 @@ int main() {
 						*/
 					}
 					else{ // Dampen the string
-						Dampener.dampenString(&queue, true, 200); // Damps the string
+						// Dampener.dampenString(&queue, true, 200); // Damps the string
 						pc.puts("should dampen string here\r\n");
 						led2 = 0;
 
@@ -212,7 +212,7 @@ void calibrateStrikers(){
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
 	queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
-	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
+	// queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
 	pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
 	StrikerR.calibrate(700, false, 0.025);
@@ -222,9 +222,9 @@ void calibrateStrikers(){
 	StrikerL.calibrate(700, true, 0.025);
 	pc.puts("Done calibrating left striker\n");
 
-	pc.puts("calibrating dampener now...\n");
-	Dampener.calibrate(40, false, 0.01);
-	pc.puts("Done calibrating dampener\n");
+	// pc.puts("calibrating dampener now...\n");
+	// Dampener.calibrate(40, false, 0.01);
+	// pc.puts("Done calibrating dampener\n");
 
 	if(TEST){
 		wait(3);
@@ -236,7 +236,7 @@ void calibrateStrikers(){
 		wait(3);
 		StrikerR.coastStrikeMIDI(1);
 		wait(3);
-		Dampener.dampenString(&queue, true, 500);
-		wait(3);
+		// Dampener.dampenString(&queue, true, 500);
+		// wait(3);
 	}
 }
