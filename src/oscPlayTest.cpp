@@ -43,7 +43,7 @@ Thread thread(osPriorityHigh);
 EventQueue queue;
 
 // Right striker Actuator Init
-RotaryActuator StrikerR(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
+RotaryActuator StrikerL(new QEIx4(PD_4, PD_3, NC, (QEIx4::EMODE)(QEIx4::IRQ | QEIx4::SPEED)),
 						new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false), 
 						loopTime, 0.002f, 0.0f, 0.0001f);
 // SingleMC33926MotorController * rightStriker =  new SingleMC33926MotorController(D8, D14, A2, PB_10, PE_15, false);
@@ -77,7 +77,7 @@ int main() {
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
 
-	TuningHead.autoStringCalibration(&StrikerR);
+	TuningHead.autoStringCalibration(&StrikerL);
 
 
 	char name[] = "Whamola";
@@ -149,7 +149,7 @@ int main() {
 						led2 = 1;
 						// if(flag){
 							strikeLED = 1;	
-							StrikerR.coastStrikeMIDI(velocity);
+							StrikerL.coastStrikeMIDI(velocity);
 							printf("striker right\n");
 
 						// }
@@ -184,7 +184,7 @@ int main() {
 				if (strcmp(msg->format, ",i") == 0) {
 					float pwmDuty = (float) osc.getIntAtIndex(msg, 0) / 100.0f;
 					pc.printf("drTest with value: %f\n", pwmDuty);
-					StrikerR.coastStrikePowerTest(pwmDuty, 50);
+					StrikerL.coastStrikePowerTest(pwmDuty, 50);
 				}
 
 			}
@@ -218,17 +218,17 @@ void calibrateStrikers(){
 	thread.start(callback(&queue, &EventQueue::dispatch_forever));
 
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
-	queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
-	// queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
+	// queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
+	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
-	pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
-	StrikerR.calibrate(700, false, 0.025);
-	pc.puts("Done calibrating right striker now\n");
+	// pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
+	// StrikerR.calibrate(700, false, 0.025);
+	// pc.puts("Done calibrating right striker now\n");
 	
-	// pc.puts("calibrating left striker now...\n");
-	// StrikerL.calibrate(700, true, 0.025);
-	// pc.puts("Done calibrating left striker\n");
+	pc.puts("calibrating left striker now...\n");
+	StrikerL.calibrate(700, true, 0.025);
+	pc.puts("Done calibrating left striker\n");
 
 	pc.puts("calibrating dampener now...\n");
 	Dampener.calibrate(40, false, 0.01);
@@ -238,11 +238,11 @@ void calibrateStrikers(){
 		// wait(3);
 		// StrikerL.coastStrike(0.75, 350, 50);
 		wait(3);
-		StrikerR.coastStrikeMIDI(127);
+		StrikerL.coastStrikeMIDI(127);
 		wait(3);
-		StrikerR.coastStrikeMIDI(95);
+		StrikerL.coastStrikeMIDI(95);
 		wait(3);
-		StrikerR.coastStrikeMIDI(1);
+		StrikerL.coastStrikeMIDI(1);
 		wait(3);
 		Dampener.dampenString(&queue, true, 500);
 		wait(3);
