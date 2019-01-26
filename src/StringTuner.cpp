@@ -76,9 +76,9 @@ void StringTuner::updateODrivePositionUser(float position){
 }
 
 
-void StringTuner::attachFreqSenseADC(EventQueue * queue){
-	int period_ms = PERIOD_ACF	 * 1000;
-	queue->call_every(period_ms, &readSample);
+void StringTuner::attachFreqSenseADC(int time_ms, EventQueue * queue){
+	// int period_ms = PERIOD_ACF * 1000;
+	queue->call_every(time_ms, &readSample);
 }
 
 
@@ -116,22 +116,25 @@ void StringTuner::calibrateODrive(){
 
 void StringTuner::autoStringCalibration(RotaryActuator * Striker){
 	int pose = _zeroCurrentPose - 500.0f;
+	int i;
 	float measuredFreq = 0.0f;
-	float measuredPose;
+	float measuredPose, adcSample;
 	printf("starting for loop now\n");
 	while (measuredFreq < _idealNotesMap[_highestNote]){
 		updateODrivePosition(pose);
-		wait_ms(200);
+		wait_ms(500);
 		Striker->coastStrikeMIDI(60);
 		printf("Just struck string\n");
-		wait_ms(500);
+		wait_ms(1000);
 		printf("calculating frequency\n");
-		printf("ACF frequency = %f\n",FreqCalc());
+		for(i=0; i<5; i++){
+			printf("ACF frequency = %f\tTop Buffer value: %f\n", FreqCalc(), input.peek(adcSample));
+		}
 		measuredFreq += 10.0f; // substitute this for now
 		printf("Reading Lever Position\n");
 	 	_currentNoBendPose = _odrive->getPositionEstimate(_axis);
 	 	updateModel(_currentNoBendPose, pow(measuredFreq, 2));
-	 	wait_ms(500);
+	 	wait_ms(3000);
 	 	pose += 500.0f;
 	}
 }

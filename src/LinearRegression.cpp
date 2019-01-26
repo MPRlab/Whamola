@@ -17,7 +17,7 @@ vector<float> LinearRegression::updateModel(float newX, float newY){
     ySum += newY;
     xxSum += (newX * newX);
     xySum += (newX * newY);
-    cout << xSum << "\n";;
+    // cout << xSum << "\n";;
 
 	// Caluculate slope and intercept
 	slope = (yData.size() * xySum - xSum * ySum) / (yData.size() * xxSum - xSum * xSum);

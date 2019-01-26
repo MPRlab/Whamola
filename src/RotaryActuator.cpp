@@ -244,7 +244,7 @@ void RotaryActuator::controlLoop(){
 			}
 		}
 		else{
-			printf("Encoder ticks: %f\n", _Encoder->getPosition());
+			// printf("Encoder ticks: %f\n", _Encoder->getPosition());
 			if(!_directionCCW){
 				_Motor->setSpeedCoast(_motorPower);
 

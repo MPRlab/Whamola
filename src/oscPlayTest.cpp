@@ -5,6 +5,7 @@
 #include "RotaryActuator.h"
 #include <string>
 #include "StringTuner.h"
+// #include "yin.h"
 
 #define VERBOSE 1
 #define TEST 0
@@ -26,6 +27,8 @@ Serial pc(USBTX, USBRX);
 
 // User button for test program flow
 DigitalIn userButton(USER_BUTTON);
+
+Timer t;
 
 // ODrive constructor
 Serial * odrive_serial = new Serial(ODRIVE2TX, ODRIVE2RX);
@@ -76,8 +79,12 @@ int main() {
 	// calibrateODrive();
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
-
-	TuningHead.autoStringCalibration(&StrikerL);
+	// int period_ms = PERIOD_ACF * 1000;
+	// queue.call_every(loopTime, &readSample);
+	// TuningHead.attachFreqSenseADC(loopTime, &queue);
+	// wait_ms(500);
+	// printf("added readSample to queue\n");
+	// TuningHead.autoStringCalibration(&StrikerL);
 
 
 	char name[] = "Whamola";
@@ -93,6 +100,7 @@ int main() {
 	strikeLED = 1;
 	wait(1);
 	strikeLED = 0;
+	t.start();
 
 	//Setup ethernet interface
 	EthernetInterface eth;
@@ -137,7 +145,7 @@ int main() {
 					uint32_t pitch 	  = osc.getIntAtIndex(msg, 0);
 					uint32_t velocity = osc.getIntAtIndex(msg, 1);
 
-					bool flag = false;
+					// static bool flag = false;
 
 					printf("Pitch %d, velocity %d\r\n",pitch,velocity);
 
@@ -148,9 +156,22 @@ int main() {
 						// TuningHead.playMidiNote(pitch);
 						led2 = 1;
 						// if(flag){
-							strikeLED = 1;	
-							StrikerL.coastStrikeMIDI(velocity);
-							printf("striker right\n");
+						printf("striker right\n");
+						float frequency, time, sample;
+						StrikerL.coastStrikeMIDI(velocity);
+						int i;
+						for (i=0; i < LENGTH*4 + LENGTH; i++){
+							readSample();
+							wait_us(PERIOD_ACF);
+						}
+						t.reset();
+
+						while(time < 5.0f){
+							frequency = FreqCalc();
+							time = t.read();
+							printf("Time: %f\tReadings: %f\tFrequency: %f\n", time, frequency, input.peek(sample));
+
+						}
 
 						// }
 						// else{
@@ -190,6 +211,7 @@ int main() {
 			}
 			else if(strcmp(messageType, "setTunerPos") == 0){
 				if(strcmp(msg->format, ",i") == 0){
+					strikeLED = 1;	
 					pc.puts("the message is setTunerPos and the format is correct\n");
 					int userPose = osc.getIntAtIndex(msg, 0);
 					pc.printf("setTunerPos message for encoder value: %d\n", userPose);
