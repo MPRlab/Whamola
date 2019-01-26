@@ -21,6 +21,7 @@ DigitalOut led2(LED2);	//Blue controller LED
 DigitalOut led3(LED3);	//Red ethernet LED
 
 DigitalOut strikeLED(D6); 
+DigitalOut ADCTestPin(PE_4);
 
 // pc UART comms constructor
 Serial pc(USBTX, USBRX);
@@ -34,8 +35,12 @@ Timer t;
 Serial * odrive_serial = new Serial(ODRIVE2TX, ODRIVE2RX);
 // ODriveMbed odrive(odrive_serial);
 
+// ACF Constructor
+Yin ACF(A3);
+
 // String Tuner constructor
-StringTuner TuningHead(odrive_serial, 21, 38);
+StringTuner TuningHead(odrive_serial, &ACF, 21, 38);
+
 
 // Function Prototypes
 void calibrateStrikers();
@@ -43,6 +48,8 @@ void calibrateStrikers();
 // Init variables
 int loopTime = 5; // milliseconds
 Thread thread(osPriorityHigh);
+// Thread AudioThread(osPriorityNormal);
+
 EventQueue queue;
 
 // Right striker Actuator Init
@@ -77,15 +84,32 @@ int main() {
 
 	// Calibrate the ODrive and strikers
 	// calibrateODrive();
-	TuningHead.calibrateODrive();
-	calibrateStrikers();
-	// int period_ms = PERIOD_ACF * 1000;
-	// queue.call_every(loopTime, &readSample);
-	// TuningHead.attachFreqSenseADC(loopTime, &queue);
+	// TuningHead.calibrateODrive();
+	ADCTestPin = 1;
+	// // Start the event queue's dispatch thread
+	thread.start(callback(&queue, &EventQueue::dispatch_forever));
+
+	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
+	// queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
+	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
+	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
+	// pc.puts("starting thread now\n");
+	// AudioThread.start(&ACF, &Yin::readSample);
+	// pc.puts("thread just started\n");
+	// calibrateStrikers();
+	queue.call_every(loopTime, &ACF, &Yin::readSample);
 	// wait_ms(500);
 	// printf("added readSample to queue\n");
 	// TuningHead.autoStringCalibration(&StrikerL);
-
+	
+	t.start();
+	float frequency, time, sample;
+	while(1){
+		frequency = ACF.FreqCalc();
+		time = t.read();
+		printf("Time: %f\tReadings: %f\tFrequency: %f\tBuffer Size: %d\n", time, frequency, ACF.input.peek(sample), ACF.input.size());
+		wait_ms(500);
+	}
 
 	char name[] = "Whamola";
 	instrumentName = name;
@@ -100,7 +124,6 @@ int main() {
 	strikeLED = 1;
 	wait(1);
 	strikeLED = 0;
-	t.start();
 
 	//Setup ethernet interface
 	EthernetInterface eth;
@@ -159,17 +182,17 @@ int main() {
 						printf("striker right\n");
 						float frequency, time, sample;
 						StrikerL.coastStrikeMIDI(velocity);
-						int i;
-						for (i=0; i < LENGTH*4 + LENGTH; i++){
-							readSample();
-							wait_us(PERIOD_ACF);
-						}
+						// int i;
+						// for (i=0; i < LENGTH*4 + LENGTH; i++){
+						// 	readSample();
+						// 	wait_us(PERIOD_ACF);
+						// }
 						t.reset();
 
 						while(time < 5.0f){
-							frequency = FreqCalc();
+							frequency = ACF.FreqCalc();
 							time = t.read();
-							printf("Time: %f\tReadings: %f\tFrequency: %f\n", time, frequency, input.peek(sample));
+							printf("Time: %f\tReadings: %f\tFrequency: %f\tBuffer Size: %d\n", time, frequency, ACF.input.peek(sample), ACF.input.size());
 
 						}
 
@@ -236,13 +259,7 @@ void calibrateStrikers(){
 	// Dampener.setCurrentOffsetThreshold(0.005f);
 
 
-	// // Start the event queue's dispatch thread
-	thread.start(callback(&queue, &EventQueue::dispatch_forever));
 
-	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
-	// queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
-	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
-	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
 
 	// pc.puts("calibrating right striker now...\n"); // TODO: Figure out why right striker encoder is not being read
 	// StrikerR.calibrate(700, false, 0.025);
