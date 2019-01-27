@@ -1,6 +1,6 @@
 #include "StringTuner.h"
 
-StringTuner::StringTuner(Serial * odrive_serial, Yin * ACF, int lowestNote, int highestNote){
+StringTuner::StringTuner(Serial * odrive_serial, int lowestNote, int highestNote){
 
 	// Initilialize ODrive
 	printf("setting baud rate\r\n");
@@ -8,7 +8,6 @@ StringTuner::StringTuner(Serial * odrive_serial, Yin * ACF, int lowestNote, int 
 	printf("Creating ODrive object\r\n");
 	_odrive = new ODriveMbed(*odrive_serial);
 	_axis = 0;
-	_ACF = ACF;
 
 	populateIdealNoteTable();
 
@@ -29,7 +28,8 @@ StringTuner::StringTuner(Serial * odrive_serial, Yin * ACF, int lowestNote, int 
 }
 
 vector<float> StringTuner::updateRegression(){
-	float measuredFreq = _ACF->FreqCalc();
+	readSamples();
+	float measuredFreq = FreqCalc();
 	float measuredPose = _odrive->getPositionEstimate(_axis);
 	return updateModel(measuredPose, pow(measuredFreq, 2));
 }
@@ -119,8 +119,10 @@ void StringTuner::autoStringCalibration(RotaryActuator * Striker){
 		printf("Just struck string\n");
 		wait_ms(1000);
 		printf("calculating frequency\n");
+		readSamples();
+
 		for(i=0; i<5; i++){
-			printf("ACF frequency = %f\tTop Buffer value: %f\n", _ACF->FreqCalc(), _ACF->input.peek(adcSample));
+			printf("ACF frequency = %f\n", FreqCalc());
 		}
 		measuredFreq += 10.0f; // substitute this for now
 		printf("Reading Lever Position\n");

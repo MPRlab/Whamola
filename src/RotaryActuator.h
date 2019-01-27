@@ -11,7 +11,6 @@
 
 #include "mbed.h"
 #include "SingleMC33926MotorController.h"
-#include <QEI.h>
 #include <QEIx4.h>
 #include <dsp.h>
 

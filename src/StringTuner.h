@@ -14,10 +14,9 @@ using namespace std;
 class StringTuner : public LinearRegression{
 public:
 
-	StringTuner(Serial * odrive_serial, Yin * ACF, int lowestNote, int highestNote); // specify the ideal notes hashmap in here
+	StringTuner(Serial * odrive_serial, int lowestNote, int highestNote); // specify the ideal notes hashmap in here
 
 	ODriveMbed * _odrive;
-	Yin * _ACF;
 
 	typedef struct NoteMapValueStruct{
 		float odriveEncEstimate;

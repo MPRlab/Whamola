@@ -14,6 +14,7 @@
 #define ODRIVE2RX D0
 
 char* instrumentName;
+Mutex sampleReadMutex;
 
 //Setup digital outputs
 DigitalOut led1(LED1);	//Green running LED
@@ -36,10 +37,10 @@ Serial * odrive_serial = new Serial(ODRIVE2TX, ODRIVE2RX);
 // ODriveMbed odrive(odrive_serial);
 
 // ACF Constructor
-Yin ACF(A3);
+// Yin ACF(A3);
 
 // String Tuner constructor
-StringTuner TuningHead(odrive_serial, &ACF, 21, 38);
+StringTuner TuningHead(odrive_serial, 21, 38);
 
 
 // Function Prototypes
@@ -82,35 +83,39 @@ int main() {
 
 	while(!userButton){}
 
+
+
 	// Calibrate the ODrive and strikers
 	// calibrateODrive();
-	// TuningHead.calibrateODrive();
+	TuningHead.calibrateODrive();
 	ADCTestPin = 1;
-	// // Start the event queue's dispatch thread
+	// Start the event queue's dispatch thread
 	thread.start(callback(&queue, &EventQueue::dispatch_forever));
 
 	// attach the Striker and Dampener controlLoop functions to the EventQueue to repeat on the loop time
 	// queue.call_every(loopTime, &StrikerR, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &StrikerL, &RotaryActuator::controlLoop);
 	queue.call_every(loopTime, &Dampener, &RotaryActuator::controlLoop);
+	calibrateStrikers();
+
 	// pc.puts("starting thread now\n");
 	// AudioThread.start(&ACF, &Yin::readSample);
 	// pc.puts("thread just started\n");
-	// calibrateStrikers();
-	queue.call_every(loopTime, &ACF, &Yin::readSample);
 	// wait_ms(500);
 	// printf("added readSample to queue\n");
 	// TuningHead.autoStringCalibration(&StrikerL);
 	
 	t.start();
-	float frequency, time, sample;
-	while(1){
-		frequency = ACF.FreqCalc();
-		time = t.read();
-		printf("Time: %f\tReadings: %f\tFrequency: %f\tBuffer Size: %d\n", time, frequency, ACF.input.peek(sample), ACF.input.size());
-		wait_ms(500);
+	float frequency, timeT;
+	while(!userButton){
+		sampleReadMutex.lock();
+		readSamples();
+		sampleReadMutex.unlock();
+		frequency = FreqCalc();
+		timeT = t.read();
+		printf("Time: %f\tFrequency: %f\n", timeT, frequency);
 	}
-
+	
 	char name[] = "Whamola";
 	instrumentName = name;
 
@@ -180,22 +185,17 @@ int main() {
 						led2 = 1;
 						// if(flag){
 						printf("striker right\n");
-						float frequency, time, sample;
+						float frequency, timeT=0.0f;
 						StrikerL.coastStrikeMIDI(velocity);
-						// int i;
-						// for (i=0; i < LENGTH*4 + LENGTH; i++){
-						// 	readSample();
-						// 	wait_us(PERIOD_ACF);
-						// }
 						t.reset();
-
-						while(time < 5.0f){
-							frequency = ACF.FreqCalc();
-							time = t.read();
-							printf("Time: %f\tReadings: %f\tFrequency: %f\tBuffer Size: %d\n", time, frequency, ACF.input.peek(sample), ACF.input.size());
-
+						while(timeT < 10.0f){
+							sampleReadMutex.lock();
+							readSamples();
+							sampleReadMutex.unlock();
+							timeT = t.read();
+							frequency = FreqCalc();
+							printf("Time: %f\tFrequency: %f\n", timeT, frequency);
 						}
-
 						// }
 						// else{
 						// 	StrikerL.coastStrikeMIDI(velocity);
