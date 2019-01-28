@@ -77,7 +77,7 @@ int main() {
 	TuningHead.calibrateODrive();
 	calibrateStrikers();
 
-	TuningHead.autoStringCalibration(&StrikerL);
+	// TuningHead.autoStringCalibration(&StrikerL);
 
 
 	char name[] = "Whamola";

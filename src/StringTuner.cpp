@@ -72,13 +72,6 @@ void StringTuner::updateODrivePosition(float position){
 void StringTuner::updateODrivePositionUser(float position){
 	_currentNoBendPose = position;
 	_odrive->setPosition(_axis, _zeroCurrentPose + position);
-
-}
-
-
-void StringTuner::attachFreqSenseADC(EventQueue * queue){
-	int period_ms = PERIOD_ACF	 * 1000;
-	queue->call_every(period_ms, &readSample);
 }
 
 

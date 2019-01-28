@@ -34,7 +34,6 @@ public:
 	vector<float> updateRegression();
 	void playMidiNote(int noteNumber);
 	void pitchBend(int bendValue); // value from 0-127 where 63 is no bend, 0 is the semi-tone below, and 127 the semi-tone above
-	void attachFreqSenseADC(EventQueue * queue);
 	void calibrateODrive();
 	void autoStringCalibration(RotaryActuator * Striker);
 	void updateODrivePositionUser(float position);
