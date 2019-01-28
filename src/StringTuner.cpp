@@ -35,6 +35,11 @@ vector<float> StringTuner::updateRegression(){
 	return updateModel(measuredPose, pow(measuredFreq, 2));
 }
 
+vector<float> StringTuner::updateRegression(float measuredFreq){
+	float measuredPose = _odrive->getPositionEstimate(_axis);
+	return updateModel(measuredPose, pow(measuredFreq, 2));
+}
+
 
 void StringTuner::playMidiNote(int noteNumber){
 	_currentNote = noteNumber;
@@ -128,6 +133,7 @@ void StringTuner::autoStringCalibration(RotaryActuator * Striker){
 	 	pose += 500.0f;
 	}
 }
+
 
 
 void StringTuner::populateIdealNoteTable(){

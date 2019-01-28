@@ -197,6 +197,12 @@ int main() {
 					TuningHead.updateODrivePositionUser(floatPose);
 				}
 			}
+			else if(strcmp(messageType, "markFrequency") == 0){
+				if(strcmp(msg->format, ",i") == 0){
+					float measuredFreq = (float) osc.getIntAtIndex(msg, 0); // TODO: Change this
+					TuningHead.updateRegression(measuredFreq);
+				}	
+			}		
 
 		}
 		else {
