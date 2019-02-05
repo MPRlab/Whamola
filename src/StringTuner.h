@@ -32,13 +32,14 @@ public:
 
 	// Public Methods
 	vector<float> updateRegression();
-	vector<float> updateRegression(float measuredFreq);
+	vector<float> updateRegressionUser(float measuredFreq);
 
 	void playMidiNote(int noteNumber);
 	void pitchBend(int bendValue); // value from 0-127 where 63 is no bend, 0 is the semi-tone below, and 127 the semi-tone above
 	void calibrateODrive();
 	void autoStringCalibration(RotaryActuator * Striker);
 	void updateODrivePositionUser(float position);
+	int _count;
 
 
 private:

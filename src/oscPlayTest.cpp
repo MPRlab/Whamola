@@ -32,7 +32,7 @@ Serial * odrive_serial = new Serial(ODRIVE2TX, ODRIVE2RX);
 // ODriveMbed odrive(odrive_serial);
 
 // String Tuner constructor
-StringTuner TuningHead(odrive_serial, 21, 38);
+StringTuner TuningHead(odrive_serial, 21, 43);
 
 // Function Prototypes
 void calibrateStrikers();
@@ -145,12 +145,13 @@ int main() {
 
 					if(velocity !=0){ // Strike the String
 
-						// TuningHead.playMidiNote(pitch);
+						TuningHead.playMidiNote(pitch);
+						wait_ms(80);
 						led2 = 1;
 						// if(flag){
 							strikeLED = 1;	
 							StrikerL.coastStrikeMIDI(velocity);
-							printf("striker right\n");
+							printf("striker left\n");
 
 						// }
 						// else{
@@ -195,15 +196,23 @@ int main() {
 					pc.printf("setTunerPos message for encoder value: %d\n", userPose);
 					float floatPose = (float)userPose;
 					TuningHead.updateODrivePositionUser(floatPose);
+
 				}
 			}
 			else if(strcmp(messageType, "markFrequency") == 0){
 				if(strcmp(msg->format, ",i") == 0){
 					float measuredFreq = (float) osc.getIntAtIndex(msg, 0); // TODO: Change this
-					TuningHead.updateRegression(measuredFreq);
+					vector<float> regret = TuningHead.updateRegressionUser(measuredFreq);
+					printf("slope: %f\tintercept: %f\n", regret[0], regret[1]);
+					printf("count: %d\n\n", TuningHead._count);
 				}	
 			}		
-
+			else if(strcmp(messageType, "tuneToMIDI") == 0){
+				if(strcmp(msg->format, ",i") == 0){
+					uint32_t pitch = osc.getIntAtIndex(msg, 0);
+					TuningHead.playMidiNote(pitch);
+				}	
+			}	
 		}
 		else {
 			//Not intended for this instrument

@@ -8,7 +8,7 @@
 	printf("Creating ODrive object\r\n");
 	_odrive = new ODriveMbed(*odrive_serial);
 	_axis = 0;
-
+	_count = 0;
 
 	populateIdealNoteTable();
 
@@ -35,22 +35,26 @@ vector<float> StringTuner::updateRegression(){
 	return updateModel(measuredPose, pow(measuredFreq, 2));
 }
 
-vector<float> StringTuner::updateRegression(float measuredFreq){
+vector<float> StringTuner::updateRegressionUser(float measuredFreq){
 	float measuredPose = _odrive->getPositionEstimate(_axis);
+	this->_count++;
 	return updateModel(measuredPose, pow(measuredFreq, 2));
+
 }
 
 
 void StringTuner::playMidiNote(int noteNumber){
-	_currentNote = noteNumber;
-	float freqDesired = _idealNotesMap[noteNumber];
-	float desiredPosition = inverseCalculation(pow(freqDesired, 2));
-	_currentNoBendPose = desiredPosition;
-	updateODrivePosition(desiredPosition);
-
-	// Find the neighboring semitone Poses for pitch bend purposes
-	_lowerSemitonePose = inverseCalculation(pow(_idealNotesMap[noteNumber - 1], 2));
-	_uppperSemitonePose = inverseCalculation(pow(_idealNotesMap[noteNumber + 1], 2));
+	if(_count > 3){
+		_currentNote = noteNumber;
+		float freqDesired = _idealNotesMap[noteNumber];
+		float desiredPosition = inverseCalculation(pow(freqDesired, 2));
+		_currentNoBendPose = desiredPosition;
+		updateODrivePosition(desiredPosition);
+		printf("current pose = %f\n",_currentNoBendPose);
+		// Find the neighboring semitone Poses for pitch bend purposes
+		_lowerSemitonePose = inverseCalculation(pow(_idealNotesMap[noteNumber - 1], 2));
+		_uppperSemitonePose = inverseCalculation(pow(_idealNotesMap[noteNumber + 1], 2));
+	}
 }
 
 void StringTuner::pitchBend(int bendValue){
