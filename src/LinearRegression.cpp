@@ -1,3 +1,11 @@
+/*
+ * 
+ * 
+ *
+ * Author: Sean O'Neil
+ *
+ */
+
 #include "LinearRegression.h"
 
 LinearRegression::LinearRegression(void){

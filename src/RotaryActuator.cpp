@@ -1,6 +1,6 @@
 /*
- * This class serves for all the DC brushed motor and encoder 
- * combo actuators in the system (the Dampener and the Strikers)
+ * 
+ * 
  *
  * Author: Sean O'Neil
  *

@@ -1,3 +1,10 @@
+/*
+ * 
+ * 
+ *
+ * Author: Sean O'Neil
+ *
+ */ 
 #include "StringTuner.h"
 
 	StringTuner::StringTuner(Serial * odrive_serial, int lowestNote, int highestNote){

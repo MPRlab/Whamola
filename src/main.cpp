@@ -1,3 +1,11 @@
+/*
+ * Contains the main loop run by the Whamola which dispatches OSC messages to test, strike, and tune the instrument
+ * 
+ *
+ * Author: Sean O'Neil
+ *
+ */
+
 #include "mbed.h"
 #include "EthernetInterface.h"
 #include "osc_client.h"

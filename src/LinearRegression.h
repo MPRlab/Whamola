@@ -1,3 +1,11 @@
+/*
+ * General Linear Regression class that can update its model on every new data point given. 
+ * This is used for the Whamola instrument to map the relationship between tuning lever position and the frequency^2 produced by the string
+ * 
+ * Author: Sean O'Neil
+ *
+ */
+
 #include <iostream>
 #include <vector>
 

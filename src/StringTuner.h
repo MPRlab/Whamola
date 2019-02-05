@@ -1,3 +1,14 @@
+/*
+ * This class acts as a facade controller for all the string tuning aspects of the instrument which includes the interfacing between the ODrive comms, 
+ * regression tuning, and the calibration sequence. It inherits the Linear Regression class 
+ * and uses its functionality to create a relationship between tuning lever position and string frequency squared during calibration to query later when
+ * a certain pitch is desired to produce a position used by the ODrive.
+ * 
+ *
+ * Author: Sean O'Neil
+ *
+ */
+
 #ifndef StringTuner_h
 #define StringTuner_h
 
